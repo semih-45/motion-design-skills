@@ -31,7 +31,8 @@ npm run render:4k   # out/fastpneu45-pub-4k-2160x3840.mp4 (même projet, échell
 
 ### Remplacer la voix off
 
-Les fichiers `public/audio/vo-1.wav` … `vo-6.wav` sont une voix de synthèse (Piper, `fr_FR-tom-medium`).
+Les fichiers `public/audio/vo-1.wav` … `vo-6.wav` sont découpés depuis `public/audio/voix-off-source.mp3` (voix fournie, générée sur fish.audio).
+La première voix de synthèse (Piper, `tools/vo.py`) est conservée dans `public/audio/voix-synthese-v1/`.
 Pour une voix de comédien : enregistrer les six phrases, garder les mêmes noms de fichiers,
 puis ajuster `start` / `duration` / `subs` dans `VOICE_OVER` si les durées changent.
 

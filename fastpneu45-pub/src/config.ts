@@ -188,35 +188,35 @@ export const FINAL = {
 export type VoLine = {file: string; start: number; duration: number; subs: [string, number, number][]};
 // subs = [texte, début, fin] en secondes DEPUIS le début de la phrase
 export const VOICE_OVER: VoLine[] = [
-  {file: 'audio/vo-1.wav', start: 0.5, duration: 6.12, subs: [
-    ['Besoin de changer vos pneus ?', 0, 1.75],
-    ['Ne vous déplacez plus,', 2.0, 3.2],
-    ['FASTPNEU45 vient', 3.45, 4.95],
-    ['directement à vous !', 4.95, 6.12],
+  {file: 'audio/vo-1.wav', start: 0.5, duration: 5.58, subs: [
+    ['Besoin de changer vos pneus ?', 0, 1.3],
+    ['Ne vous déplacez plus,', 1.6, 2.72],
+    ['FASTPNEU45 vient', 2.86, 4.15],
+    ['directement à vous !', 4.15, 5.58],
   ]},
-  {file: 'audio/vo-2.wav', start: 6.85, duration: 7.13, subs: [
-    ['Montage, équilibrage', 0, 1.55],
-    ['et réparation :', 1.55, 2.5],
-    ['notre atelier mobile', 2.6, 3.75],
-    ['est entièrement équipé', 3.75, 5.1],
-    ['pour intervenir sur votre véhicule.', 5.1, 7.05],
+  {file: 'audio/vo-2.wav', start: 6.5, duration: 6.6, subs: [
+    ['Montage, équilibrage', 0, 1.35],
+    ['et réparation :', 1.35, 2.38],
+    ['notre atelier mobile', 2.58, 3.75],
+    ['est entièrement équipé', 3.75, 5.0],
+    ['pour intervenir sur votre véhicule.', 5.0, 6.6],
   ]},
-  {file: 'audio/vo-3.wav', start: 17.0, duration: 2.87, subs: [
-    ['Nous desservons Orléans', 0, 1.4],
-    ['et toutes ses agglomérations.', 1.4, 2.87],
+  {file: 'audio/vo-3.wav', start: 17.2, duration: 2.7, subs: [
+    ['Nous desservons Orléans', 0, 1.5],
+    ['et toutes ses agglomérations.', 1.5, 2.7],
   ]},
-  {file: 'audio/vo-4.wav', start: 20.1, duration: 5.73, subs: [
-    ['Besoin d’un rendez-vous ?', 0, 1.3],
-    ['Contactez-nous 7 jours sur 7,', 1.55, 3.45],
-    ['24 heures sur 24 !', 3.75, 5.6],
+  {file: 'audio/vo-4.wav', start: 20.2, duration: 4.81, subs: [
+    ['Besoin d’un rendez-vous ?', 0, 1.2],
+    ['Contactez-nous 7 jours sur 7,', 1.52, 3.2],
+    ['24 heures sur 24 !', 3.2, 4.81],
   ]},
-  {file: 'audio/vo-5.wav', start: 26.1, duration: 4.17, subs: [
-    ['Votre devis est entièrement gratuit,', 0, 2.15],
-    ['sur notre site ou par message.', 2.37, 4.17],
+  {file: 'audio/vo-5.wav', start: 26.1, duration: 3.55, subs: [
+    ['Votre devis est entièrement gratuit,', 0, 1.85],
+    ['sur notre site ou par message.', 1.85, 3.55],
   ]},
-  {file: 'audio/vo-6.wav', start: 30.6, duration: 3.35, subs: [
-    ['FASTPNEU45,', 0, 1.6],
-    ['vos pneus… directement chez vous !', 1.79, 3.35],
+  {file: 'audio/vo-6.wav', start: 30.4, duration: 3.33, subs: [
+    ['FASTPNEU45,', 0, 1.3],
+    ['vos pneus… directement chez vous !', 1.3, 3.33],
   ]},
 ];
 
