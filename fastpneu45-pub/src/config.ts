@@ -136,7 +136,8 @@ export const SHOTS_MATERIEL: Shot[] = [
 
 /* SCÈNE 3 — CONVERSATION (simulation publicitaire) */
 export const CHAT = {
-  disclaimer: 'Conversation simulée — dimension de pneus donnée à titre d’exemple',
+  // mention affichée sous le téléphone ('' = aucune mention)
+  disclaimer: '',
   // `at` = apparition, en secondes depuis le début de la scène
   messages: [
     {from: 'client', at: 0.45, text: 'Bonjour, j’aimerais changer mes pneus sur ma Clio 3. Vous faites ce modèle ?'},
