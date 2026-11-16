@@ -48,3 +48,9 @@ La musique et les bruitages sont entièrement synthétisés par `tools/audio.py`
 ## Licence Remotion
 
 Remotion est gratuit pour les particuliers et les entreprises jusqu'à 3 personnes ; au-delà une licence est requise (remotion.dev/license).
+
+## Blender
+
+`blender/fastpneu45-pneu.blend` : scène Blender (pneu sculpté, jante alliage, étrier bleu, éclairage, caméra en orbite, 120 images en 1080×1920, moteur Cycles).
+Elle est générée par `blender/creer_scene.py` (`python3 creer_scene.py` avec le module `bpy`, ou `blender -b -P creer_scene.py`).
+La publicité n'utilise pas encore ces rendus : le pneu de la vidéo est celui de `src/components/ThreeDTire.tsx`.
