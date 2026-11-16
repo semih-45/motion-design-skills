@@ -1,0 +1,6 @@
+node_modules
+out
+tools/voices/*.onnx
+# photos non montées / originaux non floutés : gardés hors du dépôt
+public/assets/non-utilisees
+public/assets/originaux

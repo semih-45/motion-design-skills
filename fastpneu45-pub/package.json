@@ -1,0 +1,37 @@
+{
+  "name": "fastpneu45-pub",
+  "version": "1.0.0",
+  "description": "Publicité verticale FASTPNEU45 (Remotion + Three.js)",
+  "main": "index.js",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts FastPneu45 out/fastpneu45-pub-1080x1920.mp4",
+    "render:4k": "remotion render src/index.ts FastPneu45 out/fastpneu45-pub-4k-2160x3840.mp4 --scale=2 --crf=18",
+    "audio": "python3 tools/audio.py",
+    "voix": "python3 tools/vo.py",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource/barlow-condensed": "5.3.0",
+    "@fontsource/inter": "5.3.0",
+    "@react-three/fiber": "9.8.2",
+    "@remotion/cli": "4.0.543",
+    "@remotion/fonts": "4.0.543",
+    "@remotion/three": "4.0.543",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.543",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "typescript": "^7.0.2"
+  },
+  "private": true
+}
