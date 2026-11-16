@@ -97,78 +97,109 @@ def shimmer():
     y += swept_bp(rng.standard_normal(n), 3000, 9000, 1) * np.exp(-t * 3) * .5
     save("sfx-shimmer.wav", stereo(reverb(y * np.minimum(1, t / .02), 1.5, .4), .011), .6)
 
-# ---------- MUSIQUE (120 BPM, ré mineur) ----------
+# ---------- MUSIQUE (120 BPM joué en double-temps, ré mineur) ----------
 def music(total=34.8):
-    n = int(total * SR); t = np.arange(n) / SR; B = 0.5
+    n = int(total * SR); t = np.arange(n) / SR; B = 0.5; S16 = B / 4
     L = np.zeros(n); R = np.zeros(n)
     def add(x, at, g=1.0, pan=0.0):
         s = int(at * SR)
-        if s >= n: return
+        if s >= n or s < 0: return
         x = x[:n - s]; L[s:s + len(x)] += x * g * (1 - max(0, pan)); R[s:s + len(x)] += x * g * (1 + min(0, pan))
     def kick():
-        tt = t_(.34); return np.tanh(np.sin(2 * np.pi * np.cumsum(46 + 130 * np.exp(-tt * 38)) / SR) * np.exp(-tt * 9) * 1.8)
-    def hat(d=.05): tt = t_(d); return hp(rng.standard_normal(len(tt)), 7500) * np.exp(-tt * 70)
-    def clap():
-        tt = t_(.22); return bp(rng.standard_normal(len(tt)), 900, 4500) * (np.exp(-tt * 28) + .5 * np.exp(-np.abs(tt - .012) * 300)) 
-    K, H, C = kick(), hat(), reverb(clap(), .5, .25)
-    # sections
+        tt = t_(.3); return np.tanh((np.sin(2 * np.pi * np.cumsum(48 + 170 * np.exp(-tt * 42)) / SR) * np.exp(-tt * 10) + hp(rng.standard_normal(len(tt)), 3000) * np.exp(-tt * 180) * .3) * 2.2)
+    def hat(d=.04, o=False):
+        tt = t_(.22 if o else d); return hp(rng.standard_normal(len(tt)), 8000) * np.exp(-tt * (16 if o else 85))
+    def snare():
+        tt = t_(.24); return (bp(rng.standard_normal(len(tt)), 1200, 7000) * np.exp(-tt * 22) + np.sin(2 * np.pi * 190 * tt) * np.exp(-tt * 30) * .7)
+    def tom(f):
+        tt = t_(.25); return np.sin(2 * np.pi * np.cumsum(f * (1 + .6 * np.exp(-tt * 25))) / SR) * np.exp(-tt * 12)
+    K, H, HO, SN = kick(), hat(), hat(o=True), reverb(snare(), .45, .22)
     S_BEAT, S_PHONE, S_MAP, S_DROP, S_END = 4.0, 12.0, 18.5, 23.0, 33.9
     side = np.ones(n)
-    beats = np.arange(S_BEAT, S_END, B)
-    for i, b in enumerate(beats):
-        phone = S_PHONE <= b < S_MAP
-        build = S_MAP <= b < S_DROP
-        if not phone or (i % 4 in (0,)) :
-            if not build or i % 2 == 0 or b > S_DROP - 1:
-                add(K, b, .95)
-                s = int(b * SR); m = min(n - s, int(.3 * SR)); side[s:s + m] = np.minimum(side[s:s + m], np.linspace(.25, 1, m) ** 1.5)
-        if not phone: add(H, b + B / 2, .22, .2); add(H, b + B * .75, .09, -.3)
-        else: add(H, b + B / 2, .1, .2)
-        if (i % 2 == 1) and not phone and not build: add(C, b, .32)
-    # montée (roulement) avant le drop
-    for k in range(24):
-        bb = S_DROP - 1.5 + 1.5 * (k / 24) ** .8; add(reverb(clap(), .3, .2), bb, .1 + .25 * k / 24)
+    def duck(b):
+        s = int(b * SR); m = min(n - s, int(.22 * SR))
+        if m > 0: side[s:s + m] = np.minimum(side[s:s + m], np.linspace(.15, 1, m) ** 1.6)
+    # intro : pulsations sourdes qui s'accélèrent
+    for b in [1.0, 2.0, 2.5, 3.0, 3.25, 3.5, 3.625, 3.75, 3.875]:
+        add(K, b, .55)
+    nb = int(round((S_END - S_BEAT) / B))
+    for i in range(nb):
+        b = S_BEAT + i * B
+        phone = S_PHONE <= b < S_MAP; build = S_MAP <= b < S_DROP; drop = b >= S_DROP
+        # grosse caisse sur chaque temps + contretemps syncopé (énergie double-temps)
+        add(K, b, 1.0); duck(b)
+        if (drop or (not phone and not build)) and i % 4 == 3: add(K, b + 3 * S16, .8); duck(b + 3 * S16)
+        if i % 2 == 1: add(SN, b, .5 if not phone else .32)
+        if drop and i % 8 == 7: add(SN, b + 2 * S16, .35); add(SN, b + 3 * S16, .42)
+        # charleston en doubles croches
+        for k in range(4):
+            g = [.16, .07, .2, .09][k] * (.6 if phone else 1) * (1.25 if drop else 1)
+            add(H, b + k * S16, g, .25 if k % 2 else -.15)
+        if not phone: add(HO, b + 2 * S16, .13 if not drop else .18, .1)
+        # roulement de toms à chaque fin de section
+        for end in (S_PHONE, S_MAP, 26.0, 30.0):
+            if abs(b - (end - B)) < 1e-6:
+                for k, fq in enumerate([180, 150, 120, 95]): add(tom(fq), b + k * S16, .5, (k - 1.5) * .3)
+    # montée (roulement de caisse claire) avant le drop
+    for k in range(32):
+        bb = S_DROP - 2.0 + 2.0 * (k / 32) ** .75; add(snare(), bb, .1 + .32 * k / 32)
     chords = [(38, [62, 65, 69]), (34, [58, 62, 65]), (41, [60, 65, 69]), (36, [60, 64, 67])]  # Dm Bb F C
     mf = lambda m: 440 * 2 ** ((m - 69) / 12)
-    bass = np.zeros(n); pad = np.zeros(n); arp = np.zeros(n)
+    bass = np.zeros(n); pad = np.zeros(n); arp = np.zeros(n); stab = np.zeros(n); lead = np.zeros(n)
     bar = 2.0
+    melody = [74, 77, 76, 74, 72, 74, 77, 81, 74, 77, 76, 74, 72, 69, 72, 74]
     for bi in range(int(total / bar) + 1):
         st = bi * bar; root, ch = chords[bi % 4]; s = int(st * SR); m = min(int(bar * SR), n - s)
         if m <= 0: break
-        # nappe
-        p = sum(saw(mf(nn), m, d) for nn in ch for d in (-.004, .003, 0)) / 9
-        cut = 500 if st < S_BEAT else (1400 if st < S_PHONE else (800 if st < S_MAP else (1200 if st < S_DROP else 2600)))
+        phone = S_PHONE <= st < S_MAP; drop = st >= S_DROP
+        p = sum(saw(mf(nn), m, d) for nn in ch for d in (-.005, .004, 0)) / 9
+        cut = 420 if st < S_BEAT else (1500 if st < S_PHONE else (900 if st < S_MAP else (1400 if st < S_DROP else 3200)))
         pad[s:s + m] += fade(lp(p, cut), .05, .08)
-        # basse en croches
         if S_BEAT <= st < S_END:
-            for e in range(8):
-                o = s + int(e * .25 * SR); mm = min(int(.24 * SR), n - o)
+            # basse roulante en doubles croches (octaves)
+            for e in range(16):
+                o = s + int(e * S16 * SR); mm = min(int(.115 * SR), n - o)
                 if mm <= 0: break
-                if S_PHONE <= st < S_MAP and e % 2: continue
-                bn = saw(mf(root - 12), mm) * .7 + np.sin(2 * np.pi * mf(root - 12) * np.arange(mm) / SR)
-                bass[o:o + mm] += lp(bn, 320 if st < S_DROP else 520) * env(mm, .005, .22, 3)
-        # arpège
-        if st >= S_PHONE and st < S_END:
-            seq = [ch[0], ch[1], ch[2], ch[1] + 12, ch[2], ch[1], ch[0] + 12, ch[2]]
-            for e in range(8):
-                o = s + int(e * .25 * SR); mm = min(int(.3 * SR), n - o)
+                if e % 4 == 0: continue  # laisse la place à la grosse caisse
+                note = root - 12 + (12 if e % 4 == 2 and not phone else 0)
+                bn = saw(mf(note), mm) * .8 + np.sin(2 * np.pi * mf(root - 12) * np.arange(mm) / SR) * .9
+                bass[o:o + mm] += lp(bn, 380 if not drop else 750) * env(mm, .004, .11, 2.5)
+            # accords « stab » syncopés
+            if not phone:
+                for e in ([3, 6, 11, 14] if drop else [6, 14]):
+                    o = s + int(e * S16 * SR); mm = min(int(.2 * SR), n - o)
+                    if mm <= 0: break
+                    c = sum(saw(mf(nn + 12), mm, d) for nn in ch for d in (-.006, .006)) / 6
+                    stab[o:o + mm] += lp(c, 4200) * env(mm, .003, .16, 3.5)
+        if st >= 8.0 and st < S_END:
+            seq = [ch[0], ch[2], ch[1] + 12, ch[2], ch[0] + 12, ch[2], ch[1] + 12, ch[2]] * 2
+            for e in range(16):
+                o = s + int(e * S16 * SR); mm = min(int(.2 * SR), n - o)
                 if mm <= 0: break
-                f = mf(seq[e] + 12); tt = np.arange(mm) / SR
-                arp[o:o + mm] += (np.sin(2 * np.pi * f * tt) + .4 * signal.square(2 * np.pi * f * tt) * np.exp(-tt * 20)) * np.exp(-tt * 12) * (.55 if st < S_MAP else (.4 if st < S_DROP else .8))
-    arp = lp(arp, 5000); arpd = np.concatenate([np.zeros(int(.375 * SR)), arp[:-int(.375 * SR)]])
-    drone = lp(saw(mf(26), n) + saw(mf(26.07), n), 140) * np.interp(t, [0, 1.5, 4, 4.5, total], [0, 1, 1, .35, .35])
-    # montées de bruit
-    for (a, b_) in [(1.6, 4.0), (21.0, 23.0), (24.5, 26.0)]:
-        m = int((b_ - a) * SR); r = swept_bp(rng.standard_normal(m), 400, 7000, .8) * np.linspace(0, 1, m) ** 2.5
-        add(r, a, .22, -.2); add(r[::-1] * 0, a, 0)
+                fq = mf(seq[e] + 12); tt = np.arange(mm) / SR
+                arp[o:o + mm] += (np.sin(2 * np.pi * fq * tt) + .45 * signal.square(2 * np.pi * fq * tt) * np.exp(-tt * 22)) * np.exp(-tt * 16) * (.45 if phone else (.6 if not drop else .85))
+        if drop and st < S_END:
+            for e in range(4):
+                o = s + int(e * B * SR); mm = min(int(.46 * SR), n - o)
+                if mm <= 0: break
+                fq = mf(melody[((bi * 4) + e) % 16] + 0); tt = np.arange(mm) / SR
+                vib = 1 + .006 * np.sin(2 * np.pi * 5.5 * tt)
+                ld = saw(fq * vib, mm, .004) + saw(fq * vib, mm, -.004) + .5 * saw(fq * 2, mm)
+                lead[o:o + mm] += lp(ld, 3800) * env(mm, .01, .42, 2.2)
+    arp = lp(arp, 6000); d1 = int(.1875 * SR); arpd = np.concatenate([np.zeros(d1), arp[:-d1]])
+    leadr = reverb(lead, .9, .3)[:n]
+    drone = lp(saw(mf(26), n) + saw(mf(26.07), n), 150) * np.interp(t, [0, 1.5, 4, 4.3, total], [0, 1, 1, .25, .25])
+    for (a, b_) in [(1.6, 4.0), (10.5, 12.0), (20.5, 23.0), (24.5, 26.0), (28.5, 30.0)]:
+        m = int((b_ - a) * SR); r = swept_bp(rng.standard_normal(m), 400, 8000, .8) * np.linspace(0, 1, m) ** 2.5
+        add(r, a, .24, -.2)
     L += drone * .5; R += drone * .5
-    L += (pad * .34) * side + bass * .5 * side + arp * .16 + arpd * .05
-    R += (np.roll(pad, 300) * .34) * side + bass * .5 * side + arp * .08 + arpd * .13
+    L += (pad * .26 + stab * .3 + bass * .55) * side + arp * .15 + arpd * .05 + leadr * .2
+    R += (np.roll(pad, 300) * .26 + np.roll(stab, 180) * .3 + bass * .55) * side + arp * .07 + arpd * .13 + np.roll(leadr, 220) * .2
     y = np.stack([L, R], 1)
-    g = np.interp(t, [0, .3, S_END, S_END + .05, total - .02, total], [0, 1, 1, .9, 0, 0])
+    g = np.interp(t, [0, .3, S_END, total - .02, total], [0, 1, 1, 0, 0])
     tail = int(S_END * SR)
     y[tail:] *= np.exp(-(t[tail:] - S_END) * 3.2)[:, None]
-    y = np.tanh(y * g[:, None] * .9); save("music.wav", y, .85)
+    y = np.tanh(y * g[:, None] * 1.0); save("music.wav", y, .88)
 
 if __name__ == "__main__":
     engine(); whoosh("sfx-whoosh.wav", .55, 300, 5000); whoosh("sfx-whoosh-low.wav", .9, 2500, 180, 1.0)

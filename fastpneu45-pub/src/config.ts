@@ -223,7 +223,7 @@ export const VOICE_OVER: VoLine[] = [
 /* MUSIQUE + BRUITAGES (synthétisés par tools/audio.py — libres de droits) */
 export const AUDIO = {
   voiceVolume: 1, // les fichiers vo-*.wav sont déjà normalisés (~ -14 LUFS)
-  music: {file: 'audio/music.wav', volume: 0.42, duckedVolume: 0.13},
+  music: {file: 'audio/music.wav', volume: 0.5, duckedVolume: 0.17},
   sfx: [
     {file: 'audio/sfx-engine.wav', at: 0, volume: 0.24},
     {file: 'audio/sfx-spin.wav', at: 0.5, volume: 0.3},
