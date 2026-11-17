@@ -320,7 +320,7 @@ export function buildScenes(ctx) {
     const lampGlow = glowSprite('255,236,200', 0.9, 0.55); lampGlow.position.set(-0.75, 2.05, WZ + 0.12); scene.add(lampGlow);
     const lampLight = new THREE.PointLight('#ffe2b0', 1.2, 2.5, 1.6); lampLight.position.set(-0.75, 2.05, WZ + 0.25); scene.add(lampLight);
     // planters
-    const pl1 = makePlanter(1.1); pl1.position.set(-3.75, 0, -1.32); scene.add(pl1);
+    const pl1 = makePlanter(1.1); pl1.position.set(-3.75, 0, -1.32); pl1.visible = portrait; scene.add(pl1);
     const pl2 = makePlanter(0.6); pl2.position.set(3.2, 0, -1.32); scene.add(pl2);
     // car
     const car = makeCar(); car.group.position.set(0.55, 0, 0.05); scene.add(car.group);
