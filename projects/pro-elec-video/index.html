@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>PRO ELEC — Film publicitaire</title>
+<link rel="stylesheet" href="node_modules/@fontsource/montserrat/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/montserrat/700.css">
+<link rel="stylesheet" href="node_modules/@fontsource/montserrat/800.css">
+<link rel="stylesheet" href="node_modules/@fontsource/montserrat/900.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-color-emoji/index.css">
+<link rel="stylesheet" href="src/style.css">
+<script type="importmap">
+{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"><div class="tint cold"></div><div class="tint warm"></div><div id="dayBg"></div><div id="nightBg"><div class="stars"></div></div></div>
+  <canvas id="cA"></canvas>
+  <canvas id="cB"></canvas>
+  <div id="ui"></div>
+  <div id="sweep"><div></div></div>
+  <div id="flash"></div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
