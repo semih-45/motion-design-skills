@@ -59,6 +59,7 @@ export function makeAC() {
   panel.add(seam); seam.position.set(0, 0.11, 0.0302);
   const panelGroup = new THREE.Group(); panelGroup.add(panel, disp);
   g.add(back, body, slot, louverPivot, panelGroup);
+  g.name = 'Clim_murale'; back.name = 'Clim_plaque_murale'; body.name = 'Clim_corps'; slot.name = 'Clim_sortie_air'; panelGroup.name = 'Clim_facade'; panel.name = 'Clim_facade_panneau'; louverPivot.name = 'Clim_volet'; louver.name = 'Clim_volet_lame'; disp.name = 'Clim_ecran_22';
   return { group: g, back, body, slot, panel: panelGroup, louverPivot, disp };
 }
 
@@ -103,6 +104,7 @@ export function makeOutdoor() {
     brackets.add(arm, up, diag);
   }
   g.add(brackets);
+  g.name = 'Groupe_exterieur'; casing.name = 'Groupe_ext_caisson'; fanG.name = 'Groupe_ext_ventilateur'; blades.name = 'Groupe_ext_helice'; grille.name = 'Groupe_ext_grille'; side.name = 'Groupe_ext_panneau_lateral'; top.name = 'Groupe_ext_capot'; brackets.name = 'Groupe_ext_supports_muraux';
   return { group: g, casing, fan: fanG, blades, grille, side, top, brackets };
 }
 
@@ -148,6 +150,7 @@ export function makeHouse(night) {
     const p1 = new THREE.PointLight('#ffad5c', 4, 4, 1.5); p1.position.set(0.5, 0.5, 1.3); g.add(p1);
     const p2 = new THREE.PointLight('#ffad5c', 2.5, 3, 1.5); p2.position.set(-0.45, 1.4, 1.5); g.add(p2);
   }
+  g.name = night ? 'Maison_nuit' : 'Maison_jour';
   return g;
 }
 
@@ -208,6 +211,7 @@ export function makeCar() {
   const portRing = new THREE.Mesh(new THREE.CircleGeometry(0.06, 32), new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false }));
   port.add(portRing); g.add(port);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  g.name = 'Voiture_electrique'; body.name = 'Voiture_carrosserie'; cab.name = 'Voiture_vitres'; port.name = 'Voiture_prise_recharge'; wheels.forEach((w, i) => (w.name = 'Voiture_roue_' + (i + 1)));
   return { group: g, wheels, port, portRing, head };
 }
 
@@ -225,6 +229,7 @@ export function makeBorne() {
   const sensor = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.005, 12, 32), new THREE.MeshStandardMaterial({ color: '#2a323b' })); sensor.position.set(0, 0.15, 0.088); g.add(sensor);
   const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 48), new THREE.MeshPhysicalMaterial({ color: '#36404b', roughness: 0.4 }));
   sock.rotation.x = Math.PI / 2; sock.position.set(0, -0.14, 0.095); g.add(sock);
+  g.name = 'Borne_recharge'; shell.name = 'Borne_coque'; bar.name = 'Borne_barre_lumineuse'; sock.name = 'Borne_prise';
   return { group: g, bar, barMat };
 }
 
@@ -247,5 +252,6 @@ export function makeLogoSlab(tex) {
   const rimMat = new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false, transparent: true });
   const rim = new THREE.Mesh(new THREE.ShapeGeometry(rr, 12), rimMat); rim.position.z = 0.102;
   g.add(slab, face, rim);
+  g.name = 'Logo_plaque_3D'; slab.name = 'Logo_plaque'; face.name = 'Logo_image'; rim.name = 'Logo_liseret_vert';
   return { group: g, slab, face, rim, rimMat, W, H };
 }

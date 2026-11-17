@@ -30,6 +30,7 @@ async function boot() {
   ctx.project = (p, cam) => toScreen(new THREE.Vector3(p.x, p.y, p.z), cam, W, H);
   const scenes = buildScenes(ctx);
   const D = buildDOM(ctx);
+  window.__scenes = scenes; window.__THREE = THREE;
   // wait for all <img>
   await Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
   await Promise.all([...document.images].map((i) => i.decode().catch(() => 0)));

@@ -219,7 +219,7 @@ export function buildScenes(ctx) {
       r.setScissor(sx, 0, W - sx, H); r.render(night, cam);
       r.setScissorTest(false);
     };
-    scenes.push({ name: 'house', canvas, t0, t1, scene: day, camera: cam, update, render });
+    scenes.push({ name: 'house', canvas, t0, t1, scene: day, night, camera: cam, update, render });
   }
 
   /* S3 — exploded installation */
