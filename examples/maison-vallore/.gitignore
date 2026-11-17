@@ -1,0 +1,4 @@
+node_modules
+out/frames
+out/*.png
+!out/contact-*.png
