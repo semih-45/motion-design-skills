@@ -126,6 +126,7 @@ export function buildDOM(ctx) {
   /* S4 */
   D.hlBorne = headline(ui, P ? 'Bornes de recharge\n[g]à domicile' : 'Bornes de\nrecharge\n[g]à domicile');
   D.battery = el('div', 'card', `<div class="bolt">${IC.bolt}</div><div class="cell"><div class="fill"></div></div><div class="pct">20%</div>`, ui); D.battery.id = 'battery';
+  D.realBorne = el('div', 'photo realBorne', `<img src="assets/photos/borne_coffret.jpg"><div class="rbTag">${IC.check}Nos réalisations</div>`, ui);
   D.batFill = D.battery.querySelector('.fill'); D.batPct = D.battery.querySelector('.pct');
 
   /* S5 phone */
@@ -300,6 +301,14 @@ export function updateDOM(D, t, ctx) {
   {
     animHeadline(D.hlBorne, t, 16.3, 21.1);
     const v = pop(D.battery, t, 18.5, 21.1, { from: 0.85, y: 60, fin: 0.6 });
+    {
+      const on = t >= 19.5 && t <= 21.15; $(D.realBorne, on);
+      if (on) {
+        const k = spring(prog(t, 19.5, 20.2)); const o = easeIn(prog(t, 20.9, 21.15));
+        D.realBorne.style.opacity = Math.min(1, prog(t, 19.5, 19.7)) * (1 - o);
+        D.realBorne.style.transform = `translateX(${(1 - k) * 380}px) rotate(${lerp(14, 4, k)}deg) scale(${lerp(0.75, 1, k)})`;
+      }
+    }
     if (v) { const f = lerp(0.2, 1, easeInOut(prog(t, 18.7, 20.8))); D.batFill.style.width = f * 100 + '%'; D.batPct.textContent = Math.round(f * 100) + '%'; D.batFill.style.filter = `brightness(${1 + 0.15 * Math.sin(t * 9)})`; }
   }
 
