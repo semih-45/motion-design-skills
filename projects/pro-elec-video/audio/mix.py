@@ -188,12 +188,19 @@ for i in range(4): tap(32.45 + i * 0.13 + 0.2, 0.12, 900 + i * 150)
 
 # ───────────────────────── VOICE OVER ─────────────────────────
 vo = np.zeros(N)
-timing = json.load(open(os.path.join(B, 'vo_timing.json')))
-for ln in timing:
-    a, sr = sf.read(os.path.join(B, f"vo_{ln['i']}.wav"))
+USER_VO = os.path.join(B, 'vo_track.wav')
+if os.path.exists(USER_VO):               # client's own recording, re-timed by align_user_vo.py
+    a, sr = sf.read(USER_VO)
     if a.ndim > 1: a = a.mean(1)
-    a = resample_poly(a, SR, sr)
-    place(vo, a, ln['start'], 1.0)
+    a = resample_poly(a, SR, sr) if sr != SR else a
+    vo[:min(N, len(a))] = a[:N]
+else:
+    timing = json.load(open(os.path.join(B, 'vo_timing.json')))
+    for ln in timing:
+        a, sr = sf.read(os.path.join(B, f"vo_{ln['i']}.wav"))
+        if a.ndim > 1: a = a.mean(1)
+        a = resample_poly(a, SR, sr)
+        place(vo, a, ln['start'], 1.0)
 # light voice chain: HPF, presence, gentle compression
 vo = hp(vo, 90)
 vo = vo + 0.25 * bp(vo, 2500, 6000)
