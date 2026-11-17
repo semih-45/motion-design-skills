@@ -299,8 +299,8 @@ export function updateDOM(D, t, ctx) {
   /* ── S4 borne ── */
   {
     animHeadline(D.hlBorne, t, 16.3, 21.1);
-    const v = pop(D.battery, t, 18.2, 21.1, { from: 0.85, y: 60, fin: 0.6 });
-    if (v) { const f = lerp(0.2, 1, easeInOut(prog(t, 18.4, 20.6))); D.batFill.style.width = f * 100 + '%'; D.batPct.textContent = Math.round(f * 100) + '%'; D.batFill.style.filter = `brightness(${1 + 0.15 * Math.sin(t * 9)})`; }
+    const v = pop(D.battery, t, 18.5, 21.1, { from: 0.85, y: 60, fin: 0.6 });
+    if (v) { const f = lerp(0.2, 1, easeInOut(prog(t, 18.7, 20.8))); D.batFill.style.width = f * 100 + '%'; D.batPct.textContent = Math.round(f * 100) + '%'; D.batFill.style.filter = `brightness(${1 + 0.15 * Math.sin(t * 9)})`; }
   }
 
   /* ── S5 phone ── */

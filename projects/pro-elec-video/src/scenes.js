@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { blobShadow, glowSprite, keyLights, fitDistance, orbit, canvasTexture, radialTex } from './three-common.js';
-import { makeAC, makeOutdoor, makeHouse, makeCar, makeBorne, makeLogoSlab } from './models.js';
+import { makeAC, makeOutdoor, makeHouse, makeCar, makeBorne, makeLogoSlab, makeWallbox, makeType2, makeCoffret, makeConduit, makeApplique, makePlanter } from './models.js';
 import { clamp, lerp, prog, easeInOut, easeOut, easeOutQuint, spring, smooth, rng } from './util.js';
 
 const hex3 = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
@@ -274,71 +274,130 @@ export function buildScenes(ctx) {
     scenes.push({ name: 'pose', canvas, t0, t1, scene, camera: cam, update });
   }
 
-  /* S4 — EV charger */
+  /* S4 — EV charger (detailed) */
   {
     const canvas = 'A', t0 = 15.95, t1 = 21.25;
     const scene = new THREE.Scene(); scene.environment = envFor(canvas); scene.environmentIntensity = 0.85;
-    scene.fog = new THREE.Fog('#f4f6f5', 11, 26);
-    const lights = keyLights(scene, { shadowSize: 5, intensity: 2.4, dir: [-3, 7, 5], ambient: 0.45 });
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({ color: '#e9ebea', roughness: 0.9 }));
+    scene.fog = new THREE.Fog('#f4f6f5', 12, 28);
+    keyLights(scene, { shadowSize: 5, intensity: 2.4, dir: [-3, 7, 5], ambient: 0.45 });
+    // driveway: large pavers + gravel strip along the facade
+    const paveTex = canvasTexture(1024, 1024, (c, w, h) => {
+      c.fillStyle = '#b9bdb9'; c.fillRect(0, 0, w, h);
+      const rr = rng(8);
+      for (let y = 0; y < 4; y++) for (let x = 0; x < 2; x++) { const v = 206 + Math.floor(rr() * 12); c.fillStyle = `rgb(${v},${v + 2},${v + 1})`; c.fillRect(x * w / 2 + 5, y * h / 4 + 5, w / 2 - 10, h / 4 - 10); }
+      for (let i = 0; i < 2500; i++) { c.fillStyle = `rgba(0,0,0,${rr() * 0.035})`; c.fillRect(rr() * w, rr() * h, 2, 2); }
+    });
+    paveTex.wrapS = paveTex.wrapT = THREE.RepeatWrapping; paveTex.repeat.set(14, 7);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), new THREE.MeshStandardMaterial({ map: paveTex, roughness: 0.85 }));
     ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
-    // paving joints
-    const joints = canvasTexture(1024, 1024, (c, w, h) => { c.fillStyle = '#e9ebea'; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(0,0,0,0.06)'; c.lineWidth = 4; for (let i = 0; i <= 8; i++) { c.beginPath(); c.moveTo(i * w / 8, 0); c.lineTo(i * w / 8, h); c.stroke(); c.beginPath(); c.moveTo(0, i * h / 8); c.lineTo(w, i * h / 8); c.stroke(); } });
-    joints.wrapS = joints.wrapT = THREE.RepeatWrapping; joints.repeat.set(10, 10); ground.material.map = joints;
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 0.3), new THREE.MeshStandardMaterial({ color: '#f6f6f3', roughness: 0.85 }));
+    const gravel = new THREE.Mesh(new THREE.BoxGeometry(30, 0.03, 0.38), new THREE.MeshStandardMaterial({ color: '#c9ccc7', roughness: 1 }));
+    gravel.position.set(0, 0.015, -1.4); gravel.receiveShadow = true; scene.add(gravel);
+    // facade (fine render texture) + anthracite plinth
+    const renderTex = canvasTexture(1024, 1024, (c, w, h) => { c.fillStyle = '#f5f5f1'; c.fillRect(0, 0, w, h); const rr = rng(2); for (let i = 0; i < 9000; i++) { c.fillStyle = rr() > 0.5 ? `rgba(0,0,0,${rr() * 0.03})` : `rgba(255,255,255,${rr() * 0.5})`; c.fillRect(rr() * w, rr() * h, 2, 2); } });
+    renderTex.wrapS = renderTex.wrapT = THREE.RepeatWrapping; renderTex.repeat.set(8, 4);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 0.3), new THREE.MeshStandardMaterial({ map: renderTex, roughness: 0.9 }));
     wall.position.set(0, 4, -1.75); wall.receiveShadow = true; wall.castShadow = true; scene.add(wall);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.3, 0.06), new THREE.MeshStandardMaterial({ color: '#525a62', roughness: 0.5 }));
-    door.position.set(1.0, 1.15, -1.58); door.receiveShadow = true; scene.add(door);
-    for (let i = 1; i < 9; i++) { const l = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.012, 0.01), new THREE.MeshBasicMaterial({ color: '#4b535b' })); l.position.set(1.0, i * 0.255, -1.545); scene.add(l); }
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(16, 0.22, 0.04), new THREE.MeshStandardMaterial({ color: '#3a3f44', roughness: 0.7 }));
+    plinth.position.set(0, 0.11, -1.58); plinth.receiveShadow = true; scene.add(plinth);
+    // sectional garage door with panels, grooves, frame, handle
+    const doorG = new THREE.Group(); doorG.position.set(1.0, 0, -1.6); scene.add(doorG);
+    const frameM = new THREE.MeshStandardMaterial({ color: '#2f3439', roughness: 0.5 });
+    const fr = (w, h, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), frameM); m.position.set(x, y, 0.04); m.castShadow = true; doorG.add(m); };
+    fr(3.2, 0.1, 0, 2.38); fr(0.1, 2.38, -1.55, 1.19); fr(0.1, 2.38, 1.55, 1.19);
+    const panelM = new THREE.MeshPhysicalMaterial({ color: '#4e565e', roughness: 0.45, clearcoat: 0.3 });
+    for (let i = 0; i < 5; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.455, 0.05), panelM); p.position.set(0, 0.24 + i * 0.465, 0.025); p.receiveShadow = true; doorG.add(p);
+      for (let k = 0; k < 2; k++) { const gr = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.006, 0.004), new THREE.MeshBasicMaterial({ color: '#3d444b' })); gr.position.set(0, 0.24 + i * 0.465 + (k ? 0.08 : -0.08), 0.052); doorG.add(gr); } }
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.03), new THREE.MeshPhysicalMaterial({ color: '#c9ced1', metalness: 0.9, roughness: 0.25 })); handle.position.set(0, 0.95, 0.07); doorG.add(handle);
+    // wallbox + protection box + conduit
+    const BX = -2.35, BY = 1.15, WZ = -1.6;
+    const wb = makeWallbox(); wb.group.position.set(BX, BY, WZ); scene.add(wb.group);
+    const coffret = makeCoffret(); coffret.position.set(BX, BY + 0.72, WZ); scene.add(coffret);
+    scene.add(makeConduit([new THREE.Vector3(BX, BY + 0.66, WZ + 0.04), new THREE.Vector3(BX, BY + 0.14, WZ + 0.04)]));
+    scene.add(makeConduit([new THREE.Vector3(BX - 0.08, BY + 0.78, WZ + 0.04), new THREE.Vector3(BX - 0.08, 3.6, WZ + 0.04)]));
+    const ringGlow = glowSprite('34,197,94', 0.32, 0); ringGlow.position.set(BX, BY + 0.055, WZ + 0.16); scene.add(ringGlow);
+    // wall lamp + warm wash
+    const lamp = makeApplique(); lamp.position.set(-0.75, 2.05, WZ); scene.add(lamp);
+    const lampGlow = glowSprite('255,236,200', 0.9, 0.55); lampGlow.position.set(-0.75, 2.05, WZ + 0.12); scene.add(lampGlow);
+    const lampLight = new THREE.PointLight('#ffe2b0', 1.2, 2.5, 1.6); lampLight.position.set(-0.75, 2.05, WZ + 0.25); scene.add(lampLight);
+    // planters
+    const pl1 = makePlanter(1.1); pl1.position.set(-3.75, 0, -1.32); scene.add(pl1);
+    const pl2 = makePlanter(0.6); pl2.position.set(3.2, 0, -1.32); scene.add(pl2);
+    // car
     const car = makeCar(); car.group.position.set(0.55, 0, 0.05); scene.add(car.group);
     const carShadow = blobShadow(5.6, 2.6, 0.35); carShadow.position.set(0.55, 0.005, 0.05); scene.add(carShadow);
-    const borne = makeBorne(); borne.group.position.set(-2.35, 1.2, -1.6); scene.add(borne.group);
-    const bGlow = glowSprite('34,197,94', 0.9, 0); bGlow.position.set(-2.35, 1.27, -1.45); scene.add(bGlow);
-    const portW = car.port.getWorldPosition(new THREE.Vector3());
-    const cablePts = [new THREE.Vector3(-2.35, 1.06, -1.48), new THREE.Vector3(-2.38, 0.5, -1.35), new THREE.Vector3(-2.45, 0.04, -0.9), new THREE.Vector3(-2.5, 0.04, 0.3), new THREE.Vector3(-2.1, 0.06, 1.25), new THREE.Vector3(-1.62, 0.45, 1.25), new THREE.Vector3(portW.x, portW.y, portW.z + 0.12)];
-    const cableCurve = new THREE.CatmullRomCurve3(cablePts, false, 'catmullrom', 0.35);
-    const cable = new THREE.Mesh(new THREE.TubeGeometry(cableCurve, 260, 0.028, 12, false), new THREE.MeshPhysicalMaterial({ color: '#2a3036', roughness: 0.5, clearcoat: 0.4 }));
-    cable.castShadow = true; scene.add(cable);
-    const plug = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.18, 24), new THREE.MeshPhysicalMaterial({ color: '#30373e', roughness: 0.4 }));
-    plug.rotation.x = Math.PI / 2; scene.add(plug);
+    // Type 2 connector + live cable
+    const plug = makeType2(); scene.add(plug.group);
+    const cableMat = new THREE.MeshPhysicalMaterial({ color: '#23292e', roughness: 0.5, clearcoat: 0.4 });
+    let cable = new THREE.Mesh(new THREE.BufferGeometry(), cableMat); cable.castShadow = true; scene.add(cable);
     const N = 220; const pts = makePoints(N); scene.add(pts);
-    const portGlow = glowSprite('34,197,94', 0.7, 0); portGlow.position.copy(portW).add(new THREE.Vector3(0, 0, 0.08)); scene.add(portGlow);
-    const cam = mkCam(30); const tgt = new THREE.Vector3();
-    const tmp = new THREE.Vector3();
+    const portGlow = glowSprite('34,197,94', 0.7, 0); scene.add(portGlow);
+    const gland = new THREE.Vector3(BX - 0.05, BY - 0.23, WZ + 0.07);
+    const dock = new THREE.Vector3(BX + 0.18, BY - 0.07 - 0.03, WZ + 0.06);
+    const UP = new THREE.Vector3(0, 1, 0), IN = new THREE.Vector3(0, 0, -1);
+    const qa = new THREE.Quaternion(), qb = new THREE.Quaternion().setFromUnitVectors(UP, IN), qDock = new THREE.Quaternion();
+    const cam = mkCam(30); const tgt = new THREE.Vector3(); const tmp = new THREE.Vector3(); const tail = new THREE.Vector3(); const pos = new THREE.Vector3();
+    let curve = null;
     const update = (t) => {
-      // car arrives
-      const a = easeOutQuint(prog(t, 15.95, 17.0));
-      car.group.position.x = 0.55 + lerp(4.5, 0, a);
-      for (const w of car.wheels) w.rotation.z = -lerp(4.5, 0, a) / 0.36;
+      const a = easeOutQuint(prog(t, 15.95, 17.1));
+      car.group.position.x = 0.55 + lerp(5.0, 0, a);
+      for (const w of car.wheels) w.rotation.z = -lerp(5.0, 0, a) / 0.36;
       carShadow.position.x = car.group.position.x;
-      const on = smooth(16.75, 17.05, t);
-      borne.barMat.color.setRGB(lerp(0.12, 0.13, on) + on * 0.0, lerp(0.16, 0.77, on), lerp(0.14, 0.37, on));
-      bGlow.material.opacity = on * (0.7 + 0.3 * Math.sin(t * 6) * smooth(18.3, 18.6, t));
-      // cable draws from charger to car
-      const cp = easeInOut(prog(t, 17.15, 18.15));
-      const n = cable.geometry.index.count; cable.geometry.setDrawRange(0, Math.floor(n * cp / 6) * 6); cable.visible = cp > 0.002;
-      cableCurve.getPointAt(Math.max(0.001, cp), tmp); plug.position.copy(tmp);
-      const tan = cableCurve.getTangentAt(Math.max(0.001, cp)); plug.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan);
-      plug.visible = cp > 0.002;
-      car.portRing.material.color.set(t > 18.15 ? '#22C55E' : '#9ca3af');
-      portGlow.material.opacity = t > 18.15 ? 0.5 + 0.4 * Math.sin((t - 18.15) * 8) : 0;
-      // energy particles
+      car.group.updateMatrixWorld(true);
+      const portW = car.port.getWorldPosition(new THREE.Vector3());
+      car.flapPivot.rotation.y = -1.6 * easeInOut(prog(t, 17.2, 17.6));
+      // LED: off → green, then breathing while charging
+      const on = smooth(16.45, 16.75, t), chg = smooth(18.45, 18.7, t);
+      const breath = 0.75 + 0.25 * Math.sin((t - 18.45) * 5.5);
+      const lv = on * (chg ? lerp(1, breath, chg) : 1);
+      wb.ledMat.color.setRGB(lerp(0.16, 0.13 * lv + 0.05, on), lerp(0.2, 0.77 * lv + 0.1, on), lerp(0.19, 0.37 * lv + 0.05, on));
+      ringGlow.material.opacity = on * 0.8 * lv;
+      // connector path
+      const pull = easeInOut(prog(t, 17.3, 17.6)), travel = easeInOut(prog(t, 17.6, 18.35)), insert = easeOut(prog(t, 18.35, 18.45));
+      const p0 = dock, p1 = dock.clone().add(new THREE.Vector3(0, -0.16, 0.18));
+      const end = portW.clone().add(new THREE.Vector3(0, 0, 0.09 - 0.045 * insert));
+      const mid = new THREE.Vector3((p1.x + end.x) / 2 - 0.2, 1.05, (p1.z + end.z) / 2 + 0.3);
+      if (travel <= 0) pos.lerpVectors(p0, p1, pull);
+      else { const u = travel; pos.set(0, 0, 0).addScaledVector(p1, (1 - u) * (1 - u)).addScaledVector(mid, 2 * u * (1 - u)).addScaledVector(end, u * u); }
+      plug.group.position.copy(pos);
+      plug.group.quaternion.copy(qDock).slerp(qb, travel);
+      plug.group.updateMatrixWorld(true);
+      tail.copy(plug.tailLocal).applyMatrix4(plug.group.matrixWorld);
+      const dir = new THREE.Vector3(0, 1, 0).applyQuaternion(plug.group.quaternion);
+      const s2 = travel;
+      const lv3 = (x, y) => new THREE.Vector3().lerpVectors(x, y, s2);
+      const cps = [gland, new THREE.Vector3(BX - 0.07, 0.55, WZ + 0.14),
+        lv3(new THREE.Vector3(BX - 0.02, 0.18, WZ + 0.3), new THREE.Vector3(BX - 0.12, 0.035, -0.6)),
+        lv3(new THREE.Vector3(BX + 0.16, 0.3, WZ + 0.22), new THREE.Vector3(BX + 0.05, 0.035, 0.6)),
+        lv3(tail.clone().addScaledVector(dir, -0.22), new THREE.Vector3(portW.x - 0.25, 0.3, portW.z + 0.45)),
+        tail.clone()];
+      curve = new THREE.CatmullRomCurve3(cps, false, 'centripetal');
+      cable.geometry.dispose(); cable.geometry = new THREE.TubeGeometry(curve, 180, 0.024, 10, false);
+      car.portRing.material.color.set(t > 18.45 ? '#22C55E' : '#9ca3af');
+      portGlow.position.copy(portW).add(new THREE.Vector3(0, 0, 0.05));
+      portGlow.material.opacity = t > 18.45 ? 0.45 + 0.35 * Math.sin((t - 18.45) * 8) : 0;
+      // energy particles along the cable (borne → car)
       const P = pts.geometry.attributes.position.array, C = pts.geometry.attributes.aColor.array, S = pts.geometry.attributes.aSize.array, A = pts.geometry.attributes.aAlpha.array;
-      const flow = smooth(18.2, 18.5, t) * (1 - smooth(20.9, 21.2, t));
+      const flow = smooth(18.5, 18.8, t) * (1 - smooth(20.95, 21.25, t));
       for (let i = 0; i < N; i++) {
-        const u = ((i / N) + (t - 18.2) * 0.45) % 1;
-        cableCurve.getPointAt(Math.max(0, Math.min(1, u)), tmp);
+        const u = ((i / N) + (t - 18.5) * 0.45) % 1;
+        curve.getPointAt(Math.max(0, Math.min(1, u)), tmp);
         const j = (i * 7919 % 100) / 100;
-        P[i * 3] = tmp.x + (j - 0.5) * 0.05; P[i * 3 + 1] = tmp.y + 0.03 + ((i * 31 % 100) / 100 - 0.5) * 0.05; P[i * 3 + 2] = tmp.z + 0.02;
-        C.set(j > 0.5 ? hex3('#22c55e') : hex3('#86efac'), i * 3); S[i] = 0.03 + j * 0.05; A[i] = flow * (0.6 + 0.4 * Math.sin(u * 40 + t * 10));
+        P[i * 3] = tmp.x + (j - 0.5) * 0.04; P[i * 3 + 1] = tmp.y + 0.03 + ((i * 31 % 100) / 100 - 0.5) * 0.04; P[i * 3 + 2] = tmp.z + 0.02;
+        C.set(j > 0.5 ? hex3('#22c55e') : hex3('#86efac'), i * 3); S[i] = 0.025 + j * 0.04; A[i] = flow * (0.6 + 0.4 * Math.sin(u * 40 + t * 10));
       }
       for (const k of ['position', 'aColor', 'aSize', 'aAlpha']) pts.geometry.attributes[k].needsUpdate = true;
-      const dist = fitDistance(cam, portrait ? 3.8 : 6.4, portrait ? 3.0 : 2.6, portrait ? 0.85 : 0.85);
-      tgt.set(portrait ? -1.2 : -0.5, portrait ? 0.95 : 0.8, 0);
-      orbit(cam, tgt, dist * lerp(1.12, 0.98, easeInOut(prog(t, 16, 21.2))), lerp(-0.62, -0.36, easeInOut(prog(t, 16, 21.2))), lerp(0.2, 0.13, easeInOut(prog(t, 16, 21))));
-      cam.filmOffset = portrait ? 0 : -5.4; cam.updateProjectionMatrix();
+      // camera: detail close-up on the charger, then pull back to reveal the car
+      const k = easeInOut(prog(t, 16.9, 18.7));
+      const wideD = fitDistance(cam, portrait ? 3.8 : 6.4, portrait ? 3.0 : 2.6, 0.85) * lerp(1.04, 0.97, easeInOut(prog(t, 18.7, 21.2)));
+      const closeD = portrait ? 2.7 : 1.8;
+      const cT = portrait ? new THREE.Vector3(BX + 0.16, BY + 0.36, WZ + 0.1) : new THREE.Vector3(BX + 0.1, BY + 0.22, WZ + 0.1), wT = new THREE.Vector3(portrait ? -1.2 : -0.5, portrait ? 0.95 : 0.8, 0);
+      tgt.lerpVectors(cT, wT, k);
+      const az = lerp(-0.42 + 0.12 * prog(t, 16, 17), -0.48, k) + 0.14 * easeInOut(prog(t, 18.7, 21.2));
+      orbit(cam, tgt, lerp(closeD, wideD, k), az, lerp(0.06, 0.15, k));
+      cam.filmOffset = portrait ? 0 : lerp(-3.5, -6.6, k); cam.updateProjectionMatrix();
       pointScale(pts, cam, H, dpr);
     };
+    qDock.identity();
     scenes.push({ name: 'borne', canvas, t0, t1, scene, camera: cam, update });
   }
 

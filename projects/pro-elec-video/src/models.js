@@ -206,13 +206,24 @@ export function makeCar() {
   // handles & mirror
   for (const x of [-0.75, 0.35]) { const h = box(0.25, 0.03, 0.02, glass); h.position.set(x, 0.86, 0.985); g.add(h); }
   const mir = rbox(0.2, 0.1, 0.18, 0.04, paint); mir.position.set(0.85, 1.02, 0.98); g.add(mir);
+  // body details: side skirt, lower bumper, door seams, charge flap
+  const trim = new THREE.MeshPhysicalMaterial({ color: '#1c2024', roughness: 0.5, clearcoat: 0.3 });
+  const skirt = box(2.0, 0.07, 0.02, trim); skirt.position.set(0, 0.28, 0.985); g.add(skirt);
+  const skirt2 = skirt.clone(); skirt2.position.z = -0.985; g.add(skirt2);
+  const intake = box(0.04, 0.12, 1.2, trim); intake.position.set(2.31, 0.42, 0); g.add(intake);
+  const diff = box(0.04, 0.1, 1.3, trim); diff.position.set(-2.33, 0.36, 0); g.add(diff);
+  const seamM = new THREE.MeshBasicMaterial({ color: '#c9cdcb' });
+  for (const [x, h] of [[0.28, 0.6], [-0.95, 0.6]]) { const sm = new THREE.Mesh(new THREE.PlaneGeometry(0.008, h), seamM); sm.position.set(x, 0.66, 0.9865); g.add(sm); }
+  const flapPivot = new THREE.Group(); flapPivot.position.set(-1.9, 0.84, 0.975); flapPivot.name = 'Voiture_trappe_recharge';
+  const flap = box(0.15, 0.13, 0.012, paint); flap.position.set(0.075, 0, 0.006); flapPivot.add(flap); g.add(flapPivot);
+  const portHole = new THREE.Mesh(new THREE.CircleGeometry(0.058, 32), new THREE.MeshStandardMaterial({ color: '#0e1113' })); portHole.position.set(-1.98, 0.84, 0.968); g.add(portHole);
   // charge port (rear left, visible side +z)
   const port = new THREE.Group(); port.position.set(-1.98, 0.84, 0.97);
-  const portRing = new THREE.Mesh(new THREE.CircleGeometry(0.06, 32), new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false }));
+  const portRing = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.064, 40), new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false }));
   port.add(portRing); g.add(port);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   g.name = 'Voiture_electrique'; body.name = 'Voiture_carrosserie'; cab.name = 'Voiture_vitres'; port.name = 'Voiture_prise_recharge'; wheels.forEach((w, i) => (w.name = 'Voiture_roue_' + (i + 1)));
-  return { group: g, wheels, port, portRing, head };
+  return { group: g, wheels, port, portRing, head, flapPivot };
 }
 
 /* ───────── Wall charger (inspired by the Legrand Green'Up in the photos) ───────── */
@@ -254,4 +265,115 @@ export function makeLogoSlab(tex) {
   g.add(slab, face, rim);
   g.name = 'Logo_plaque_3D'; slab.name = 'Logo_plaque'; face.name = 'Logo_image'; rim.name = 'Logo_liseret_vert';
   return { group: g, slab, face, rim, rimMat, W, H };
+}
+
+/* ───────── Detailed home wallbox (attached Type 2 cable, LED ring, holster) ───────── */
+export function makeWallbox() {
+  const g = new THREE.Group(); g.name = 'Borne_murale';
+  const shellMat = new THREE.MeshPhysicalMaterial({ color: '#2d3339', roughness: 0.42, clearcoat: 0.6, clearcoatRoughness: 0.25 });
+  const plate = rbox(0.3, 0.42, 0.018, 0.008, new THREE.MeshStandardMaterial({ color: '#1f2428', roughness: 0.7 })); plate.position.z = 0.009; plate.name = 'Borne_platine';
+  const body = rbox(0.27, 0.38, 0.1, 0.045, shellMat); body.position.z = 0.065; body.name = 'Borne_coque';
+  const glass = rbox(0.225, 0.315, 0.012, 0.035, new THREE.MeshPhysicalMaterial({ color: '#07090b', roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.02, metalness: 0.3 }));
+  glass.position.set(0, 0.012, 0.118); glass.name = 'Borne_facade_verre';
+  // LED ring + status bar
+  const ledMat = new THREE.MeshBasicMaterial({ color: '#2a3330', toneMapped: false });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.0075, 16, 96), ledMat); ring.position.set(0, 0.055, 0.1255); ring.name = 'Borne_anneau_LED';
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.008, 0.004), ledMat); bar.position.set(0, -0.075, 0.1255); bar.name = 'Borne_barre_LED';
+  // bolt icon + RFID mark printed on the glass
+  const iconTex = canvasTexture(256, 256, (c, w, h) => {
+    c.clearRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,0.92)';
+    c.beginPath(); const p = [[140, 30], [70, 140], [122, 140], [104, 226], [184, 108], [132, 108], [160, 30]]; c.moveTo(...p[0]); p.slice(1).forEach((q) => c.lineTo(...q)); c.closePath(); c.fill();
+  });
+  const icon = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.06), new THREE.MeshBasicMaterial({ map: iconTex, transparent: true, toneMapped: false }));
+  icon.position.set(0, 0.055, 0.1253); icon.name = 'Borne_logo_eclair';
+  const rfidTex = canvasTexture(256, 128, (c, w, h) => {
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 7; c.lineCap = 'round';
+    for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(w / 2, h / 2 + 10, 18 + i * 18, -2.4, -0.74); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.arc(w / 2, h / 2 + 10, 7, 0, 7); c.fill();
+  });
+  const rfid = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.03), new THREE.MeshBasicMaterial({ map: rfidTex, transparent: true, toneMapped: false }));
+  rfid.position.set(0, -0.115, 0.1253); rfid.name = 'Borne_zone_badge';
+  // cable gland (bottom)
+  const gland = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.05, 24), new THREE.MeshStandardMaterial({ color: '#15191c', roughness: 0.6 }));
+  gland.position.set(-0.05, -0.205, 0.07); gland.name = 'Borne_presse_etoupe';
+  // holster on the right
+  const holster = new THREE.Group(); holster.name = 'Borne_support_prise'; holster.position.set(0.18, -0.07, 0.06);
+  const hb = rbox(0.09, 0.13, 0.1, 0.03, shellMat); holster.add(hb);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.04, 32), new THREE.MeshStandardMaterial({ color: '#0b0d0f' })); hole.rotation.x = Math.PI / 2; hole.position.y = -0.066; holster.add(hole);
+  g.add(plate, body, glass, ring, bar, icon, rfid, gland, holster);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return { group: g, ledMat, ring, bar, gland, holster };
+}
+
+/* Type 2 connector — head along +Y */
+export function makeType2() {
+  const g = new THREE.Group(); g.name = 'Prise_Type2';
+  const black = new THREE.MeshPhysicalMaterial({ color: '#1b1f23', roughness: 0.45, clearcoat: 0.5 });
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.043, 0.075, 40), black); head.position.y = 0.0; g.add(head);
+  const faceTex = canvasTexture(256, 256, (c, w, h) => {
+    c.fillStyle = '#0d1012'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#2e353b'; const holes = [[128, 70, 14], [86, 92, 22], [170, 92, 22], [70, 145, 22], [186, 145, 22], [128, 128, 22], [104, 196, 14], [152, 196, 14]];
+    holes.forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); });
+  });
+  const face = new THREE.Mesh(new THREE.CircleGeometry(0.04, 40), new THREE.MeshBasicMaterial({ map: faceTex })); face.rotation.x = -Math.PI / 2; face.position.y = 0.0385; face.rotation.z = 0; g.add(face);
+  const accent = new THREE.Mesh(new THREE.TorusGeometry(0.044, 0.004, 10, 48), new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false })); accent.rotation.x = Math.PI / 2; accent.position.y = -0.03; g.add(accent);
+  const grip = rbox(0.06, 0.16, 0.045, 0.02, black); grip.position.set(0, -0.11, 0.0); grip.rotation.x = 0.35; g.add(grip);
+  const btn = rbox(0.022, 0.03, 0.01, 0.004, new THREE.MeshStandardMaterial({ color: '#3a4249' })); btn.position.set(0, -0.06, 0.027); btn.rotation.x = 0.35; g.add(btn);
+  const strain = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.024, 0.07, 20), black); strain.position.set(0, -0.2, -0.035); strain.rotation.x = 0.35; g.add(strain);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return { group: g, tailLocal: new THREE.Vector3(0, -0.23, -0.045) };
+}
+
+/* Protection box (breakers) + conduit — the "pro install" detail */
+export function makeCoffret() {
+  const g = new THREE.Group(); g.name = 'Coffret_protection';
+  const box = rbox(0.3, 0.26, 0.11, 0.02, new THREE.MeshPhysicalMaterial({ color: '#f3f4f2', roughness: 0.35, clearcoat: 0.4 })); box.position.z = 0.055; g.add(box);
+  const inner = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.09), new THREE.MeshStandardMaterial({ color: '#d9ddda' })); inner.position.set(0, 0, 0.111); g.add(inner);
+  const modM = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4 });
+  const levM = new THREE.MeshBasicMaterial({ color: '#22C55E', toneMapped: false });
+  for (let i = 0; i < 3; i++) {
+    const m = box2(0.05, 0.075, 0.02, modM); m.position.set(-0.07 + i * 0.07, 0, 0.12); g.add(m);
+    const l = box2(0.016, 0.022, 0.012, levM); l.position.set(-0.07 + i * 0.07, 0.008, 0.134); g.add(l);
+  }
+  const lid = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.12, 0.006), new THREE.MeshPhysicalMaterial({ color: '#ffffff', transmission: 0.9, roughness: 0.05, thickness: 0.01, transparent: true, opacity: 0.35 }));
+  lid.position.set(0, 0, 0.148); g.add(lid);
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+  function box2(w, h, d, m) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); }
+}
+
+export function makeConduit(points, r = 0.016) {
+  const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.05);
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, r, 12, false), new THREE.MeshStandardMaterial({ color: '#d7dad8', roughness: 0.5 }));
+  m.castShadow = true; m.name = 'Gaine_electrique';
+  return m;
+}
+
+/* Wall lamp */
+export function makeApplique() {
+  const g = new THREE.Group(); g.name = 'Applique_murale';
+  const m = new THREE.MeshPhysicalMaterial({ color: '#2a2f33', roughness: 0.4, metalness: 0.6 });
+  const b = rbox(0.1, 0.24, 0.1, 0.015, m); b.position.z = 0.05; g.add(b);
+  const lightM = new THREE.MeshBasicMaterial({ color: '#fff3d6', toneMapped: false });
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.07), lightM); top.rotation.x = -Math.PI / 2; top.position.set(0, 0.121, 0.05); g.add(top);
+  const bot = top.clone(); bot.rotation.x = Math.PI / 2; bot.position.y = -0.121; g.add(bot);
+  return g;
+}
+
+/* Planter with shrubs */
+export function makePlanter(w = 1.0) {
+  const g = new THREE.Group(); g.name = 'Jardiniere';
+  const pot = rbox(w, 0.38, 0.38, 0.03, new THREE.MeshStandardMaterial({ color: '#3a4046', roughness: 0.6 })); pot.position.y = 0.19; g.add(pot);
+  const soil = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.02, 0.32), new THREE.MeshStandardMaterial({ color: '#3b2f25' })); soil.position.y = 0.375; g.add(soil);
+  const leafs = [new THREE.MeshStandardMaterial({ color: '#5fae74', roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: '#7fc98f', roughness: 0.8 }), new THREE.MeshStandardMaterial({ color: '#4b9a62', roughness: 0.8 })];
+  let s = 3;
+  const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  for (let i = 0; i < 9; i++) {
+    const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1 + r() * 0.1, 1), leafs[i % 3]);
+    b.position.set((r() - 0.5) * (w - 0.2), 0.45 + r() * 0.15, (r() - 0.5) * 0.18); b.scale.y = 1.2 + r() * 0.8; b.castShadow = true; g.add(b);
+  }
+  // tall grasses
+  const gm = new THREE.MeshStandardMaterial({ color: '#8cc79a', roughness: 0.8 });
+  for (let i = 0; i < 14; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.5 + r() * 0.35, 5), gm); c.position.set((r() - 0.5) * (w - 0.15), 0.6 + r() * 0.1, (r() - 0.5) * 0.2); c.rotation.z = (r() - 0.5) * 0.5; c.castShadow = true; g.add(c); }
+  return g;
 }

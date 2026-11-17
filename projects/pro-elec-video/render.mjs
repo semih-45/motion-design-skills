@@ -43,7 +43,7 @@ async function openPage() {
 }
 async function shoot(page, t, file) {
   await page.evaluate((t) => window.renderAt(t), t);
-  await page.screenshot({ path: file, type: file.endsWith('.png') ? 'png' : 'jpeg', quality: file.endsWith('.png') ? undefined : quality, clip: { x: 0, y: 0, width: W, height: H } });
+  await page.screenshot({ path: file, type: file.endsWith('.png') ? 'png' : 'jpeg', quality: file.endsWith('.png') ? undefined : quality, clip: { x: 0, y: 0, width: W, height: H }, timeout: 300000 });
 }
 
 const t0 = Date.now();

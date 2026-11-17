@@ -175,12 +175,12 @@ def tap(t, g=0.18, f=900):
     place(sfx, stereo(s, rs.rand() - 0.5), t, g)
 for t in [12.35, 12.5, 12.7, 12.85, 12.95, 13.1, 13.2, 13.35]: tap(t + 0.25, 0.14, 700 + rs.rand() * 600)
 # plug click + charge hum
-tap(18.15, 0.45, 1400); tap(18.19, 0.25, 600)
+tap(17.32, 0.18, 900); tap(18.42, 0.45, 1400); tap(18.46, 0.25, 600)
 n = int(2.6 * SR); tt2 = T(n); hum = np.sin(2 * np.pi * (220 + 160 * tt2 / 2.6) * tt2) * 0.5 + np.sin(2 * np.pi * (440 + 320 * tt2 / 2.6) * tt2) * 0.2
-hum *= np.minimum(1, tt2 / 0.3) * np.minimum(1, (2.6 - tt2) / 0.3); place(sfx, stereo(hum), 18.3, 0.035)
-ding(20.65, 2093, 0.12, 0.6)   # full battery
+hum *= np.minimum(1, tt2 / 0.3) * np.minimum(1, (2.6 - tt2) / 0.3); place(sfx, stereo(hum), 18.55, 0.035)
+ding(20.8, 2093, 0.12, 0.6)   # full battery
 # borne lights up
-ding(16.8, 880, 0.08, 0.6); ding(16.85, 1318.5, 0.07, 0.6)
+ding(16.5, 880, 0.08, 0.6); ding(16.55, 1318.5, 0.07, 0.6)
 # pin drop + pops
 tap(28.95, 0.35, 300); whoosh(29.4, 0.9, 0.14)
 for i in range(3): tap(30.0 + i * 0.28 + 0.15, 0.22, 1100 + i * 200)
