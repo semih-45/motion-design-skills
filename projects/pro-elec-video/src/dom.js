@@ -127,6 +127,7 @@ export function buildDOM(ctx) {
   D.hlBorne = headline(ui, P ? 'Bornes de recharge\n[g]à domicile' : 'Bornes de\nrecharge\n[g]à domicile');
   D.battery = el('div', 'card', `<div class="bolt">${IC.bolt}</div><div class="cell"><div class="fill"></div></div><div class="pct">20%</div>`, ui); D.battery.id = 'battery';
   D.realBorne = el('div', 'photo realBorne', `<img src="assets/photos/borne_coffret.jpg"><div class="rbTag">${IC.check}Nos réalisations</div>`, ui);
+  D.rbImg = D.realBorne.querySelector('img'); D.rbShine = el('div', 'rbShine', '', D.realBorne);
   D.batFill = D.battery.querySelector('.fill'); D.batPct = D.battery.querySelector('.pct');
 
   /* S5 phone */
@@ -302,11 +303,17 @@ export function updateDOM(D, t, ctx) {
     animHeadline(D.hlBorne, t, 16.3, 21.1);
     const v = pop(D.battery, t, 18.5, 21.1, { from: 0.85, y: 60, fin: 0.6 });
     {
-      const on = t >= 19.5 && t <= 21.15; $(D.realBorne, on);
+      const T0 = 18.9, T1 = 21.15;
+      const on = t >= T0 && t <= T1; $(D.realBorne, on);
       if (on) {
-        const k = spring(prog(t, 19.5, 20.2)); const o = easeIn(prog(t, 20.9, 21.15));
-        D.realBorne.style.opacity = Math.min(1, prog(t, 19.5, 19.7)) * (1 - o);
-        D.realBorne.style.transform = `translateX(${(1 - k) * 380}px) rotate(${lerp(14, 4, k)}deg) scale(${lerp(0.75, 1, k)})`;
+        // slow-motion reveal: long soft ease, blur clearing, then a slow Ken Burns move inside the frame
+        const k = easeOutQuint(prog(t, T0, T0 + 1.3)); const o = easeIn(prog(t, T1 - 0.3, T1));
+        D.realBorne.style.opacity = Math.min(1, prog(t, T0, T0 + 0.6)) * (1 - o);
+        D.realBorne.style.transform = `translateY(${(1 - k) * 60}px) rotate(${lerp(9, 3, k)}deg) scale(${lerp(1.12, 1, k) * (1 - 0.03 * o)})`;
+        D.realBorne.style.filter = k < 0.98 ? `blur(${((1 - k) * 14).toFixed(1)}px)` : '';
+        const z = prog(t, T0, T1);
+        D.rbImg.style.transform = `scale(${lerp(1.0, 1.2, z)}) translate(${lerp(0, -2.5, z)}%, ${lerp(2, -3, z)}%)`;
+        D.rbShine.style.transform = `translateX(${lerp(-160, 260, easeInOut(prog(t, T0 + 0.7, T0 + 1.9)))}%) skewX(-18deg)`;
       }
     }
     if (v) { const f = lerp(0.2, 1, easeInOut(prog(t, 18.7, 20.8))); D.batFill.style.width = f * 100 + '%'; D.batPct.textContent = Math.round(f * 100) + '%'; D.batFill.style.filter = `brightness(${1 + 0.15 * Math.sin(t * 9)})`; }
