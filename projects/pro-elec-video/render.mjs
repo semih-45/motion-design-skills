@@ -35,7 +35,7 @@ async function openPage() {
   const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: dpr });
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') console.log('[page]', m.text()); });
   page.on('pageerror', (e) => console.log('[pageerror]', e.message));
-  await page.goto(`http://127.0.0.1:${port}/index.html?fmt=${fmt}&dpr=${dpr}`);
+  await page.goto(`http://127.0.0.1:${port}/index.html?fmt=${fmt}&dpr=${dpr}${args.query ? '&' + args.query : ''}`);
   await page.waitForFunction(() => window.__ready || window.__error, null, { timeout: 180000 });
   const err = await page.evaluate(() => window.__error);
   if (err) throw new Error(err);
@@ -49,7 +49,7 @@ async function shoot(page, t, file) {
 const t0 = Date.now();
 if (args.stills) {
   const page = await openPage();
-  for (const s of String(args.stills).split(',')) { const t = parseFloat(s); await shoot(page, t, path.join(out, `${fmt}_${t.toFixed(2)}.jpg`)); console.log('still', t); }
+  for (const s of String(args.stills).split(',')) { const t = parseFloat(s); await shoot(page, t, path.join(out, `${fmt}_${t.toFixed(2)}.${args.png ? 'png' : 'jpg'}`)); console.log('still', t); }
 } else {
   const total = Math.round(duration * fps);
   const from = parseInt(args.from || '0'), to = parseInt(args.to || String(total));

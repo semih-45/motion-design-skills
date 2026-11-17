@@ -52,6 +52,7 @@ async function boot() {
       c.style.filter = blur > 0.3 ? `blur(${blur.toFixed(1)}px)` : '';
     }
     updateDOM(D, t, ctx);
+    if (q.has('noui')) { document.getElementById('ui').style.display = 'none'; document.getElementById('sweep').style.display = 'none'; }
     return true;
   };
   window.__fmt = { W, H, fmt, duration: DURATION };
