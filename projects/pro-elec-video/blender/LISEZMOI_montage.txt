@@ -1,0 +1,34 @@
+PRO ELEC — MODIFIER LES TEXTES DE LA VIDÉO DANS BLENDER (5.3)
+==============================================================
+
+Contenu du dossier (garde tous les fichiers ensemble, dans le même dossier) :
+  - PRO-ELEC_..._textes_modifiables.blend   → le projet à ouvrir
+  - PRO-ELEC_..._sans_titres_4K.mp4         → la vidéo sans les titres
+  - PRO-ELEC_bande_son.wav                  → ta voix off + la musique
+
+1. OUVRIR
+   Double-clique sur le fichier .blend. En haut, choisis l'onglet « Video Editing »
+   (s'il n'y est pas : clic sur le « + » à côté des onglets → Video Editing → Video Editing).
+
+2. MODIFIER UN TEXTE
+   - Dans la timeline en bas, chaque titre est une bande violette nommée « Titre 01 – ligne 1 », etc.
+   - Clique sur la bande voulue, puis appuie sur N pour ouvrir le panneau de droite
+     (onglet « Strip »).
+   - Change le texte dans le champ « Text ». Tu peux aussi changer :
+       · la taille (Size), la couleur (Color),
+       · la position (Location X / Y : 0,5 = centre),
+       · le fond blanc arrondi (case « Box »).
+   - Pour changer QUAND le texte apparaît : fais glisser la bande dans la timeline.
+
+3. VÉRIFIER
+   Appuie sur Espace pour lire la vidéo (le son est inclus).
+
+4. EXPORTER LA VIDÉO FINALE
+   Menu Rendu (Render) → Rendre l'animation (Ctrl + F12).
+   La vidéo est enregistrée dans le sous-dossier « rendu » à côté du .blend,
+   en MP4 4K avec le son. Compte quelques minutes.
+
+Astuces
+   - Le titre a deux couleurs (noir + vert) ? C'est 2 bandes : une par ligne.
+   - Les polices Montserrat sont intégrées dans le fichier, rien à installer.
+   - Ctrl + Z annule, Ctrl + S enregistre.
