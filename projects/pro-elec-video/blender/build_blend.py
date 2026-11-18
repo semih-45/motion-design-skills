@@ -60,6 +60,15 @@ for glb in sorted(glob.glob(os.path.join(HERE, 'glb', '*.glb'))):
     bpy.ops.import_scene.gltf(filepath=glb)
     night = 'nuit' in name
     setup(name, night)
+    # open looking through the camera, with materials visible (no Cycles load on the viewport)
+    for ws in bpy.data.workspaces:
+        for scr in ws.screens:
+            for a in scr.areas:
+                if a.type == 'VIEW_3D':
+                    sp = a.spaces.active
+                    sp.shading.type = 'MATERIAL'
+                    sp.overlay.show_extras = False          # hide the big light / camera wireframes
+                    if sp.region_3d: sp.region_3d.view_perspective = 'CAMERA'
     out = os.path.join(HERE, name + '.blend')
     bpy.ops.wm.save_as_mainfile(filepath=out, compress=True)
     print('saved', out)

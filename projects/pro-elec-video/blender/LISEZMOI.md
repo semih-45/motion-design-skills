@@ -22,3 +22,18 @@ Les pièces sont nommées (ex. `Clim_volet`, `Clim_facade`, `Groupe_ext_helice`,
 - Changer le format pour une bâche : Propriétés de sortie → Résolution (ex. 9000×3000 pour 3 m × 1 m).
 - Les dossiers `glb/` contiennent les mêmes modèles au format glTF (importables aussi dans
   Cinema 4D, 3ds Max, SketchUp…). `build_blend.py` régénère les .blend à partir des .glb.
+
+## Ouvrir correctement
+
+1. **Dézippe d'abord** (clic droit → « Extraire tout… »), puis ouvre le `.blend` depuis le dossier extrait.
+2. Le fichier s'ouvre en **vue caméra** avec les matières visibles. Pour l'aperçu final : touche **Z → Rendu**
+   (ou **F12** pour faire l'image finale).
+3. Se déplacer : molette = zoom, clic molette = tourner, Maj + clic molette = déplacer.
+   Pavé numérique **0** = revenir à la vue caméra.
+
+## Message « Failed to load using Vulkan, using OpenGL instead »
+
+Ce n'est pas lié aux fichiers : c'est Blender qui n'arrive pas à utiliser Vulkan avec ta carte graphique
+et passe automatiquement en OpenGL (tout fonctionne quand même). Clique **OK**.
+Pour ne plus l'avoir : **Édition → Préférences → Système → Backend graphique (Backend) → OpenGL**,
+puis redémarre Blender. Ou mets à jour le pilote de ta carte graphique (NVIDIA / AMD / Intel).
