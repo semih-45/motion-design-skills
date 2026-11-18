@@ -34,7 +34,7 @@ else:
         (3.25, 4.55, [('La clim', INK), ('réversible', GREEN)], {}),
         (4.6, 6.55, [("L'été :", INK), ('fraîcheur', COLD)], {}),
         (6.6, 8.45, [("L'hiver :", INK), ('chaleur', WARM)], {}),
-        (8.45, 10.45, [('Au chaud,', INK), ('jour et nuit', GREEN)], dict(size=64, box=True, y0=170, step=76, x=230)),
+        (8.45, 10.45, [('Au chaud,', INK), ('jour et nuit', GREEN)], dict(size=64, box=True, y0=165, step=100, x=230)),
         (10.35, 12.1, [('Votre facture', INK), ('fait la', GREEN), ('différence', GREEN)], {}),
         (12.1, 16.1, [('Installation par un pro', INK)], dict(y0=167, x=960, align='CENTER')),
         (13.35, 16.1, [('Garantie décennale 10 ans', INK)], dict(size=38, weight=800, y0=290, x=960, align='CENTER', box=True)),
