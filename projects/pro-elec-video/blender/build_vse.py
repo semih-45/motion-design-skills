@@ -94,6 +94,21 @@ for k, (t0, t1, lines, opt) in enumerate(TITLES):
         st.keyframe_insert('blend_alpha', frame=f1 - 9)
         st.blend_alpha = 0.0; st.keyframe_insert('blend_alpha', frame=f1)
 
+# open straight on the video editor: turn the Layout workspace into "Montage video"
+ws = bpy.data.workspaces.get('Layout')
+if ws:
+    ws.name = 'Montage video'
+    for scr in ws.screens:
+        for a in scr.areas:
+            if a.type == 'VIEW_3D':
+                a.type = 'SEQUENCE_EDITOR'; sp = a.spaces.active; sp.view_type = 'SEQUENCER_PREVIEW'
+                sp.show_region_ui = True
+                try: sp.preview_channels = 'COLOR_ALPHA'
+                except Exception: pass
+            elif a.type == 'DOPESHEET_EDITOR':
+                try: a.ui_type = 'TIMELINE'
+                except Exception: pass
+    for w in bpy.data.window_managers[0].windows: w.workspace = ws
 os.makedirs(out_dir, exist_ok=True)
 path = os.path.join(out_dir, 'PRO-ELEC_' + ('vertical' if P else 'horizontal') + '_textes_modifiables.blend')
 bpy.ops.wm.save_as_mainfile(filepath=path, relative_remap=True, compress=True)

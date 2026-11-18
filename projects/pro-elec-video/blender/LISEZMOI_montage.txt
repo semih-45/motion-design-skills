@@ -6,9 +6,18 @@ Contenu du dossier (garde tous les fichiers ensemble, dans le même dossier) :
   - PRO-ELEC_..._sans_titres_4K.mp4         → la vidéo sans les titres
   - PRO-ELEC_bande_son.wav                  → ta voix off + la musique
 
+0. DÉZIPPER D'ABORD (important)
+   Clic droit sur le .zip → « Extraire tout… » → choisis un dossier (ex. Bureau).
+   N'ouvre PAS le .blend directement depuis l'intérieur du zip : Blender ne trouverait
+   ni la vidéo ni le son.
+
 1. OUVRIR
-   Double-clique sur le fichier .blend. En haut, choisis l'onglet « Video Editing »
-   (s'il n'y est pas : clic sur le « + » à côté des onglets → Video Editing → Video Editing).
+   Dans Blender : Fichier → Ouvrir… → va dans le dossier extrait → fichier .blend.
+   Le projet s'ouvre directement sur l'onglet « Montage video » :
+   en haut l'aperçu de la vidéo, en bas la timeline avec les bandes.
+   Si tu ne vois pas toutes les bandes : passe la souris sur la timeline et appuie
+   sur la touche Début (Home / ↖) pour tout afficher.
+   Si l'aperçu reste noir : vérifie que la vidéo .mp4 est bien dans le même dossier.
 
 2. MODIFIER UN TEXTE
    - Dans la timeline en bas, chaque titre est une bande violette nommée « Titre 01 – ligne 1 », etc.
