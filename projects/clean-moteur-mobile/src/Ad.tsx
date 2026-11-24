@@ -19,7 +19,6 @@ import {DropGuide} from './scenes/DropGuide';
 export const adSchema = z.object({
   phoneDisplay: z.string(),
   snapchatHandle: z.string(),
-  price: z.string(),
   withAudio: z.boolean(),
   carColor: z.enum(['bleu', 'blanc']),
 });
@@ -35,7 +34,6 @@ const IMPACTS = [
   {f: C.pinDrop + 8, amp: 10},
   {f: C.garageStrike, amp: 18},
   {f: C.disc + 2, amp: 8},
-  {f: C.ctaPrice, amp: 20},
   {f: C.logoBig + 14, amp: 8},
 ];
 

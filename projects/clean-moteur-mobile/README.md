@@ -19,9 +19,9 @@ aucune image générée par IA. La voiture, le téléphone et le disque de frein
 | 2 | 2,5 – 7,5 s | Berline 3D qui se matérialise (scan), capot qui s'ouvre, passage en rayons X / blueprint, 5 annotations rouges tracées au feutre | — |
 | 3 | 7,5 – 10,5 s | La goutte H₂ plonge dans le moteur, vague verte jusqu'à l'échappement, annotations réécrites en vert ✓, la voiture redevient brillante, titre « Décalaminage à l'hydrogène » | la goutte devient une bulle de message |
 | 4 | 10,5 – 15,5 s | Smartphone 3D, conversation (frappe, « en train d'écrire… », devis « Validé ✓ », « Rendez-vous confirmé ») | la notification devient l'épingle sur la carte |
-| 5 | 15,5 – 19,4 s | Plan de ville, l'utilitaire suit le tracé vert de la goutte : « À domicile », « Sur votre lieu de travail », garage barré | panoramique rapide |
+| 5 | 15,5 – 19,4 s | Carte façon appli de navigation (fond clair, bâtiments 3D, noms de rues, itinéraire bleu, bandeau « En route vers vous ») : l'utilitaire suit la goutte vers « À domicile » puis « Sur votre lieu de travail », puis garage barré | panoramique rapide |
 | 6 | 19,4 – 22,5 s | « Et aussi… la petite mécanique » : 4 cartes (Vidange, Freins, Batterie, Diagnostic), l'icône Freins devient un disque 3D | le disque tourne et devient le cercle du QR code |
-| 7 | 22,5 – 26,5 s | QR code Snapchat, « Prenez rendez-vous », téléphone, 50 € · intervention en 1 h, zone d'intervention | le petit logo grandit |
+| 7 | 22,5 – 26,5 s | QR code Snapchat, « Prenez rendez-vous », téléphone, zone d'intervention | le petit logo grandit |
 | 8 | 26,5 – 30 s | Logo en couleurs sur plaque blanche, « Redonnez une seconde jeunesse à votre moteur ! », téléphone | fin |
 
 Le petit logo (version blanche) reste en haut de l'écran pendant les scènes 2 à 7.
@@ -33,7 +33,7 @@ npm install
 npm run studio                                    # aperçu interactif dans le navigateur
 npm run render                                    # → out/clean-moteur-mobile.mp4
 npx remotion render CleanMoteurAd out/v2.mp4 \
-  --props='{"phoneDisplay":"07 45 16 23 57","snapchatHandle":"clean.moteur","price":"50€","withAudio":true,"carColor":"blanc"}'
+  --props='{"phoneDisplay":"07 45 16 23 57","snapchatHandle":"clean.moteur","withAudio":true,"carColor":"blanc"}'
 ```
 
 Les réglages modifiables sans toucher au code (props Remotion) :
@@ -42,7 +42,6 @@ Les réglages modifiables sans toucher au code (props Remotion) :
 |---|---|---|
 | `phoneDisplay` | `07 45 16 23 57` | numéro affiché (scènes 7 et 8) |
 | `snapchatHandle` | `clean.moteur` | identifiant Snapchat + contenu du QR code (`https://www.snapchat.com/add/<handle>`) |
-| `price` | `50€` | prix affiché sur le badge |
 | `withAudio` | `true` | avec ou sans la bande son |
 | `carColor` | `bleu` | couleur de la berline 3D : `bleu` ou `blanc` (rendu « studio ») |
 
@@ -59,6 +58,9 @@ normaliser (voir plus bas).
 
 - **Voix off** : voix de synthèse française (Piper TTS, voix `fr_FR-siwis-medium`, licence libre).
   Textes dans `audio-src/vo_lines.txt`, vitesse par phrase dans `audio-src/vo_rates.json`, fichiers dans `audio-src/vo/`.
+  Une phrase peut être découpée en morceaux avec ` || ` et un morceau peut avoir sa propre vitesse (`@0.86`) :
+  c'est ce qui permet de faire épeler « E G R » clairement. Chaque phrase a été vérifiée par reconnaissance vocale (Whisper).
+  Piper a une part d'aléatoire : si vous régénérez, réécoutez (`bash audio-src/make_vo.sh s2` ne refait que la phrase s2).
   Pour une voix humaine : remplacer `audio-src/vo/s1.wav` … `s8.wav` par vos enregistrements (même découpage)
   puis relancer le mixage. Le placement des phrases s'adapte tout seul.
 - **Musique + bruitages** : générés par `audio-src/make_audio.py` (120 BPM, chaque changement de scène tombe sur un temps).
@@ -66,7 +68,7 @@ normaliser (voir plus bas).
 
 ```bash
 pip install numpy scipy piper-tts
-bash audio-src/make_vo.sh                         # (optionnel) régénère la voix off
+bash audio-src/make_vo.sh [s1 s2 …]               # (optionnel) régénère la voix off
 python3 audio-src/make_audio.py                   # → public/audio/mix_raw.wav
 ffmpeg -y -i public/audio/mix_raw.wav -af "loudnorm=I=-14:TP=-1.5:LRA=11" -ar 48000 public/audio/mix.wav
 ```
@@ -89,6 +91,5 @@ tools/stills-props.mjs idem avec des props : node tools/stills-props.mjs '{"carC
 ## À vérifier avant diffusion
 
 - Le **QR code** pointe vers `https://www.snapchat.com/add/clean.moteur` (identifiant lu sur le flyer) : à confirmer.
-- **Prix** « 50 € · intervention en 1 h » repris du flyer.
 - Les 4 cartes de **petite mécanique** (Vidange, Freins, Batterie, Diagnostic) sont des exemples : à adapter à vos prestations réelles.
 - La voix off est une **voix de synthèse** : correcte pour tester, mais une vraie voix fera mieux en diffusion payante.

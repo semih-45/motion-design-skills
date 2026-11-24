@@ -420,8 +420,6 @@ for k in range(10):
     place(sfx, bell(midi(96 + (k * 5) % 12), 0.25, 0.2), E('qr') + k * 0.035, 0.07, (k % 3 - 1) * 0.4)
 place(sfx, whoosh(0.35, 800, 5000), E('ctaCall') - 0.1, 0.25)
 place(sfx, pop(700, 0.14), E('ctaPhone'), 0.35)
-place(sfx, S(boom(1.0) * 0.8, clap(0.2) * 0.6), E('ctaPrice'), 0.6)
-place(sfx, S(bell(midi(96), 0.8), bell(midi(100), 0.8) * 0.7), E('ctaPrice') + 0.05, 0.13)
 place(sfx, pop(850, 0.12), E('ctaWhere'), 0.25)
 place(sfx, whoosh(0.6, 300, 4000), sec(SC['end']) - 0.1, 0.4)
 place(sfx, boom(2.2, 80, 32), E('logoBig') + 0.45, 0.8)

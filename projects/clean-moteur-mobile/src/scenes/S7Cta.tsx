@@ -10,7 +10,7 @@ import {DISC_HOLES} from '../three/disc';
 import {H2Drop} from '../components/H2Drop';
 import type {AdProps} from '../Ad';
 
-export const QR_FINAL = {x: 540, y: 1120, r: 238};
+export const QR_FINAL = {x: 540, y: 1000, r: 250};
 
 export const qrState = (f: number) => {
   const m = prog(f, C.ctaCall - 2, 14, easeInOut);
@@ -41,16 +41,6 @@ const PhoneIcon: React.FC<{size: number}> = ({size}) => (
   </svg>
 );
 
-const Stopwatch: React.FC<{size: number; f: number}> = ({size, f}) => (
-  <svg width={size} height={size} viewBox="0 0 64 64">
-    <circle cx={32} cy={36} r={22} fill="none" stroke="#fff" strokeWidth={5} />
-    <rect x={26} y={6} width={12} height={6} rx={2} fill="#fff" />
-    <rect x={30} y={10} width={4} height={6} fill="#fff" />
-    <line x1={32} y1={36} x2={32 + Math.sin(f * 0.25) * 14} y2={36 - Math.cos(f * 0.25) * 14} stroke="#2BD17E" strokeWidth={5} strokeLinecap="round" />
-    <circle cx={32} cy={36} r={3.5} fill="#fff" />
-  </svg>
-);
-
 const PinGlyph: React.FC<{size: number}> = ({size}) => (
   <svg width={size} height={size} viewBox="0 0 48 48">
     <path d="M 24 46 C 20 38, 8 28, 8 18 C 8 9, 15 3, 24 3 C 33 3, 40 9, 40 18 C 40 28, 28 38, 24 46 Z" fill="#E3262E" />
@@ -58,7 +48,7 @@ const PinGlyph: React.FC<{size: number}> = ({size}) => (
   </svg>
 );
 
-export const S7Cta: React.FC<AdProps> = ({phoneDisplay, snapchatHandle, price}) => {
+export const S7Cta: React.FC<AdProps> = ({phoneDisplay, snapchatHandle}) => {
   const f = useCurrentFrame();
   const qr = useQr(`https://www.snapchat.com/add/${snapchatHandle}`);
   if (f < C.qr - 6 || f > S.end + 16) return null;
@@ -82,7 +72,6 @@ export const S7Cta: React.FC<AdProps> = ({phoneDisplay, snapchatHandle, price}) 
 
   const call = prog(f, C.ctaCall, 10, easeOut);
   const phone = springy(f, C.ctaPhone, 2.2, 0.55);
-  const pricePop = f >= C.ctaPrice ? clamp(springy(f, C.ctaPrice, 2.6, 0.42), 0, 1.25) : 0;
   const where = prog(f, C.ctaWhere, 10, easeOut);
   const handle = prog(f, C.ctaCall + 8, 10, easeOut);
 
@@ -168,38 +157,12 @@ export const S7Cta: React.FC<AdProps> = ({phoneDisplay, snapchatHandle, price}) 
         <PhoneIcon size={92} />
         <span style={{fontFamily: FONT.sans, fontWeight: 900, fontSize: 98, color: '#fff', letterSpacing: -2}}>{phoneDisplay}</span>
       </div>
-      {/* offer */}
-      {pricePop > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            left: W / 2,
-            top: 590,
-            transform: `translate(-50%, 0) rotate(-3deg) scale(${pricePop})`,
-            display: 'flex',
-            alignItems: 'stretch',
-            borderRadius: 30,
-            overflow: 'hidden',
-            boxShadow: '0 24px 50px rgba(0,0,0,0.45)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <div style={{background: '#E3262E', padding: '6px 34px 10px', fontFamily: FONT.sans, fontWeight: 900, fontStyle: 'italic', fontSize: 120, color: '#fff', lineHeight: 1.05}}>{price}</div>
-          <div style={{background: '#0B1E3F', border: '4px solid #1E6BFF', borderLeft: 'none', borderRadius: '0 30px 30px 0', padding: '0 34px', display: 'flex', alignItems: 'center', gap: 18}}>
-            <Stopwatch size={78} f={f} />
-            <div style={{fontFamily: FONT.sans, color: '#fff', lineHeight: 1.02}}>
-              <div style={{fontWeight: 700, fontSize: 38}}>Intervention</div>
-              <div style={{fontWeight: 900, fontSize: 62}}>en 1h</div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* where */}
       <div
         style={{
           position: 'absolute',
           left: W / 2,
-          top: 1540,
+          top: 1420,
           transform: `translate(-50%, ${(1 - where) * 30}px)`,
           opacity: where,
           display: 'flex',

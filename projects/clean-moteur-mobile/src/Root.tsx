@@ -16,7 +16,6 @@ export const RemotionRoot: React.FC = () => (
       defaultProps={{
         phoneDisplay: '07 45 16 23 57',
         snapchatHandle: 'clean.moteur',
-        price: '50€',
         withAudio: true,
         carColor: 'bleu',
       }}
