@@ -125,9 +125,10 @@ const Notification: React.FC<{f: number}> = ({f}) => {
   const w = lerp(900, 120, morph);
   const h = lerp(168, 120, morph);
   const x = lerp(540, home.x, fall);
-  const y = lerp(lerp(330, 450, clamp(inP, 0, 1.1)), home.y - 84 * home.s * 1.25, fall);
+  const pinS = clamp(home.s * 0.9, 0.6, 1.5);
+  const y = lerp(lerp(330, 450, clamp(inP, 0, 1.1)), home.y - 84 * pinS, fall);
   const tipO = prog(f, C.notif + 14, 4);
-  const sc = lerp(1, home.s * 1.25 * (60 / 60), fall);
+  const sc = lerp(1, pinS, fall);
   return (
     <div style={{position: 'absolute', left: x, top: y, transform: `translate(-50%, -50%) scale(${sc})`, opacity: prog(f, C.notif, 4)}}>
       {/* pin tip */}

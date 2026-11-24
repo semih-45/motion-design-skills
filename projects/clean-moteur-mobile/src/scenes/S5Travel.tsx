@@ -1,156 +1,305 @@
-// Scene 5 — "On se déplace": navigation-app style map (light basemap, 3D buildings, street names,
-// blue route), the van follows the H2 drop to home then to the office; then the garage crossed out.
-import React from 'react';
-import {random, useCurrentFrame} from 'remotion';
-import {C, FONT, S, W} from '../timeline';
+// Scene 5 — "On se déplace": navigation-app view of the real centre of Orléans
+// (OpenStreetMap data, see map-src/build_orleans.py). The van follows the H2 drop over the Pont George V,
+// up Rue Royale, along Rue Jeanne-d'Arc ("À domicile") to Bd Alexandre-Martin ("Sur votre lieu de travail").
+// Then the garage gets crossed out.
+import React, {useLayoutEffect, useRef} from 'react';
+import {useCurrentFrame} from 'remotion';
+import {C, FONT, S, W, H} from '../timeline';
 import {clamp, easeIn, easeInOut, easeOut, lerp, prog, springy} from '../lib/anim';
 import {DrawPath} from '../components/Draw';
 import {H2Drop} from '../components/H2Drop';
 import {handEllipse, handLine, smoothPath} from '../lib/sketch';
+import ORL from '../data/orleans.json';
 
 type P = {x: number; y: number};
+type Pt = [number, number];
+const D = ORL as unknown as {
+  roads: {c: string; w: number; n: string; p: Pt[]}[];
+  buildings: {h: number; p: Pt[]}[];
+  water: {closed: boolean; p: Pt[]}[];
+  parks: Pt[][];
+  route: Pt[];
+  routeLen: number;
+  homeLen: number;
+  start: Pt;
+  home: Pt;
+  office: Pt;
+  labels: {n: string; x: number; y: number; dx: number; dy: number}[];
+  places: {n: string; x: number; y: number}[];
+  landmarks: {name: string; x: number; y: number}[];
+};
 
-export const HOME: P = {x: 300, y: 640};
-export const OFFICE: P = {x: 790, y: -230};
-const START: P = {x: 600, y: 1500};
+export const HOME: P = {x: D.home[0], y: D.home[1]};
+export const OFFICE: P = {x: D.office[0], y: D.office[1]};
 
-const ROUTE: P[] = [START, {x: 600, y: 1180}, {x: 600, y: 930}, {x: 300, y: 930}, HOME, {x: 300, y: 330}, {x: 790, y: 330}, {x: 790, y: 60}, OFFICE];
-
-// Route sampled + smoothed (rounded corners)
-const ROUTE_PTS: P[] = (() => {
-  const out: P[] = [];
-  for (let i = 0; i < ROUTE.length - 1; i++) {
-    const a = ROUTE[i];
-    const b = ROUTE[i + 1];
-    const n = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 20));
-    for (let k = 0; k < n; k++) out.push({x: a.x + ((b.x - a.x) * k) / n, y: a.y + ((b.y - a.y) * k) / n});
-  }
-  out.push(ROUTE[ROUTE.length - 1]);
-  return out.map((_, i) => {
-    let sx = 0;
-    let sy = 0;
-    for (let k = -3; k <= 3; k++) {
-      const q = out[Math.min(out.length - 1, Math.max(0, i + k))];
-      sx += q.x;
-      sy += q.y;
-    }
-    return {x: sx / 7, y: sy / 7};
-  });
-})();
+// ---- route helpers (metres) ----
+const ROUTE: P[] = D.route.map(([x, y]) => ({x, y}));
 const CUM: number[] = (() => {
   const c = [0];
-  for (let i = 1; i < ROUTE_PTS.length; i++) c.push(c[i - 1] + Math.hypot(ROUTE_PTS[i].x - ROUTE_PTS[i - 1].x, ROUTE_PTS[i].y - ROUTE_PTS[i - 1].y));
+  for (let i = 1; i < ROUTE.length; i++) c.push(c[i - 1] + Math.hypot(ROUTE[i].x - ROUTE[i - 1].x, ROUTE[i].y - ROUTE[i - 1].y));
   return c;
 })();
 const TOTAL = CUM[CUM.length - 1];
+// distance along the route of the point closest to HOME (projected on segments, not just vertices)
 const HOME_L = (() => {
   let best = 0;
   let bd = 1e9;
-  ROUTE_PTS.forEach((p, i) => {
-    const d = Math.hypot(p.x - HOME.x, p.y - HOME.y);
+  for (let i = 0; i < ROUTE.length - 1; i++) {
+    const a = ROUTE[i];
+    const b = ROUTE[i + 1];
+    const vx = b.x - a.x;
+    const vy = b.y - a.y;
+    const L2 = vx * vx + vy * vy || 1e-9;
+    const t = clamp(((HOME.x - a.x) * vx + (HOME.y - a.y) * vy) / L2);
+    const d = Math.hypot(a.x + vx * t - HOME.x, a.y + vy * t - HOME.y);
     if (d < bd) {
       bd = d;
-      best = i;
+      best = CUM[i] + Math.sqrt(L2) * t;
     }
-  });
-  return CUM[best];
+  }
+  return best;
 })();
 const routeAt = (l: number) => {
   const L = clamp(l, 0, TOTAL);
   let i = 1;
   while (i < CUM.length - 1 && CUM[i] < L) i++;
   const t = (L - CUM[i - 1]) / Math.max(1e-6, CUM[i] - CUM[i - 1]);
-  const a = ROUTE_PTS[i - 1];
-  const b = ROUTE_PTS[i];
+  const a = ROUTE[i - 1];
+  const b = ROUTE[i];
   return {x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, ang: Math.atan2(b.y - a.y, b.x - a.x)};
 };
-
 const vanLen = (f: number) =>
   prog(f, C.vanStart, C.home - C.vanStart, easeInOut) * HOME_L + prog(f, C.home + 2, C.office - C.home - 2, easeInOut) * (TOTAL - HOME_L);
 
-// ---- camera / projection (ground plane, h = height above ground) ----
+// ---- camera: overview (pin drop) → navigation follow ----
 export const mapCam = (f: number) => {
-  const tilt = lerp(10, 50, prog(f, S.travel, 40, easeInOut));
-  const v = routeAt(vanLen(f));
-  const cy = lerp(1000, 300, prog(f, C.vanStart - 6, C.office - C.vanStart + 6, easeInOut)) * 0.7 + v.y * 0.3;
-  const cx = 540 + (v.x - 540) * 0.25;
-  const zoom = lerp(1.3, 1.05, prog(f, S.travel, 30, easeOut));
-  return {tilt: (tilt * Math.PI) / 180, cx, cy, zoom};
+  const follow = prog(f, C.vanStart - 4, 18, easeInOut);
+  const v = routeAt(vanLen(f) + 90);
+  // smooth the follow point by averaging a little ahead/behind
+  const v2 = routeAt(vanLen(f) + 220);
+  const fx = (v.x + v2.x) / 2;
+  const fy = (v.y + v2.y) / 2 + 60;
+  const ov = {cx: (D.start[0] + HOME.x) / 2 + 40, cy: (D.start[1] + HOME.y) / 2 + 20};
+  const arrive = prog(f, C.office - 6, 12, easeInOut);
+  return {
+    cx: lerp(ov.cx, fx, follow),
+    cy: lerp(ov.cy, fy, follow),
+    zoom: lerp(0.78, 1.55, follow) + 0.25 * arrive,
+    tilt: (lerp(22, 50, follow) * Math.PI) / 180,
+  };
 };
 
-export const mapProject = (gx: number, gy: number, f: number, h = 0) => {
-  const cam = mapCam(f);
-  const D = 1500;
+const DIST = 1500;
+const SCREEN_CY = 1010;
+export const mapProject = (gx: number, gy: number, f: number, h = 0) => projectWith(mapCam(f), gx, gy, h);
+const projectWith = (cam: ReturnType<typeof mapCam>, gx: number, gy: number, h = 0) => {
   const dx = gx - cam.cx;
   const dy = gy - cam.cy;
   const Y = dy * Math.cos(cam.tilt) - h * Math.sin(cam.tilt);
-  const Z = D - dy * Math.sin(cam.tilt) - h * Math.cos(cam.tilt);
-  const s = (D / Math.max(220, Z)) * cam.zoom;
-  return {x: 540 + dx * s, y: 1000 + Y * s, s};
+  const Z = DIST - dy * Math.sin(cam.tilt) - h * Math.cos(cam.tilt);
+  const s = (DIST / Math.max(220, Z)) * cam.zoom;
+  return {x: 540 + dx * s, y: SCREEN_CY + Y * s, s};
 };
 
-// ---- city geometry (ground units) ----
-const VX = [-560, -260, 40, 300, 600, 790, 1100, 1350, 1650];
-const HY = [-1000, -700, -420, -230, 60, 330, 640, 930, 1180, 1500, 1800, 2100];
-type Road = {a: P; b: P; w: number; major: boolean; name?: string; labelAt?: P};
-const ROADS: Road[] = [];
-VX.forEach((x, i) => ROADS.push({a: {x, y: -1300}, b: {x, y: 2400}, w: i === 4 ? 46 : 30, major: i === 4}));
-HY.forEach((y, i) => ROADS.push({a: {x: -900, y}, b: {x: 2000, y}, w: i === 7 ? 46 : 30, major: i === 7}));
-ROADS.push({a: {x: -700, y: 1900}, b: {x: 1900, y: -700}, w: 40, major: true});
-const NAMES: {name: string; at: P; along: P}[] = [
-  {name: 'Rue de la République', at: {x: 600, y: 1330}, along: {x: 0, y: 1}},
-  {name: 'Boulevard Voltaire', at: {x: 455, y: 930}, along: {x: 1, y: 0}},
-  {name: 'Rue Victor Hugo', at: {x: 300, y: 470}, along: {x: 0, y: 1}},
-  {name: 'Avenue Jean Jaurès', at: {x: 980, y: 330}, along: {x: 1, y: 0}},
-  {name: 'Rue Pasteur', at: {x: 790, y: -80}, along: {x: 0, y: 1}},
-  {name: 'Rue des Lilas', at: {x: 150, y: 60}, along: {x: 1, y: 0}},
-  {name: 'Rue Gambetta', at: {x: 1100, y: 800}, along: {x: 0, y: 1}},
-];
-
-type Bld = {x0: number; y0: number; x1: number; y1: number; h: number};
-const BUILDINGS: Bld[] = [];
-const PARKS: {x0: number; y0: number; x1: number; y1: number}[] = [];
-const TREES: P[] = [];
-for (let i = 0; i < VX.length - 1; i++)
-  for (let j = 0; j < HY.length - 1; j++) {
-    const x0 = VX[i] + 34;
-    const x1 = VX[i + 1] - 34;
-    const y0 = HY[j] + 34;
-    const y1 = HY[j + 1] - 34;
-    const k = random(`blk${i}-${j}`);
-    if (k < 0.13) {
-      PARKS.push({x0, y0, x1, y1});
-      for (let t = 0; t < 7; t++) TREES.push({x: x0 + 20 + random(`tx${i}${j}${t}`) * (x1 - x0 - 40), y: y0 + 20 + random(`ty${i}${j}${t}`) * (y1 - y0 - 40)});
-      continue;
+// ---- static preprocessing ----
+const BLD = D.buildings
+  .map((b) => {
+    const n = b.p.length;
+    let a2 = 0;
+    let cx = 0;
+    let cy = 0;
+    for (let i = 0; i < n; i++) {
+      const [x0, y0] = b.p[i];
+      const [x1, y1] = b.p[(i + 1) % n];
+      a2 += x0 * y1 - x1 * y0;
+      cx += x0;
+      cy += y0;
     }
-    const nx = x1 - x0 > 230 ? 2 : 1;
-    const ny = y1 - y0 > 230 ? 2 : 1;
-    for (let a = 0; a < nx; a++)
-      for (let b = 0; b < ny; b++) {
-        if (random(`b${i}${j}${a}${b}`) < 0.15) continue;
-        const cw = (x1 - x0) / nx;
-        const ch = (y1 - y0) / ny;
-        const g = 10;
-        BUILDINGS.push({
-          x0: x0 + a * cw + g,
-          y0: y0 + b * ch + g,
-          x1: x0 + (a + 1) * cw - g,
-          y1: y0 + (b + 1) * ch - g,
-          h: 18 + random(`h${i}${j}${a}${b}`) * 50,
-        });
+    return {...b, cx: cx / n, cy: cy / n, ccw: a2 > 0, maxY: Math.max(...b.p.map((q) => q[1]))};
+  })
+  .sort((p, q) => p.maxY - q.maxY);
+const ROAD_STYLE: Record<string, {fill: string; casing: string; order: number}> = {
+  service: {fill: '#ffffff', casing: '#dfe2e6', order: 0},
+  ped: {fill: '#f7f7f5', casing: '#e2e2df', order: 1},
+  minor: {fill: '#ffffff', casing: '#d5d9de', order: 2},
+  medium: {fill: '#ffffff', casing: '#c9ced6', order: 3},
+  major: {fill: '#fde293', casing: '#e8b84a', order: 4},
+};
+const ROADS = [...D.roads].sort((a, b) => ROAD_STYLE[a.c].order - ROAD_STYLE[b.c].order);
+
+const drawMap = (g: CanvasRenderingContext2D, f: number) => {
+  const cam = mapCam(f);
+  const pr = (x: number, y: number, h = 0) => projectWith(cam, x, y, h);
+  // visible ground window (metres)
+  const span = 1150 / cam.zoom;
+  const wx0 = cam.cx - span * 0.75;
+  const wx1 = cam.cx + span * 0.75;
+  const wy0 = cam.cy - span * 1.9;
+  const wy1 = cam.cy + span * 0.95;
+  const vis = (x: number, y: number, m = 0) => x > wx0 - m && x < wx1 + m && y > wy0 - m && y < wy1 + m;
+
+  // sky / haze then land
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#dfe4ec');
+  sky.addColorStop(1, '#eef0f3');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, W, H);
+  const corner = [pr(wx0 - 600, wy0 - 400), pr(wx1 + 600, wy0 - 400), pr(wx1 + 600, wy1 + 200), pr(wx0 - 600, wy1 + 200)];
+  g.fillStyle = '#f1f3f4';
+  g.beginPath();
+  corner.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+  g.closePath();
+  g.fill();
+
+  const fillPoly = (pts: Pt[], color: string, h = 0) => {
+    g.beginPath();
+    pts.forEach(([x, y], i) => {
+      const p = pr(x, y, h);
+      if (i) g.lineTo(p.x, p.y);
+      else g.moveTo(p.x, p.y);
+    });
+    g.closePath();
+    g.fillStyle = color;
+    g.fill();
+  };
+  // parks, water
+  for (const p of D.parks) if (p.some(([x, y]) => vis(x, y, 200))) fillPoly(p, '#c8e6c0');
+  for (const w of D.water) if (w.closed) fillPoly(w.p, '#a8d3f4');
+
+  // roads: casing pass then fill pass, width follows perspective scale
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  for (const pass of [0, 1]) {
+    for (const r of ROADS) {
+      const st = ROAD_STYLE[r.c];
+      for (let i = 0; i < r.p.length - 1; i++) {
+        const [x0, y0] = r.p[i];
+        const [x1, y1] = r.p[i + 1];
+        if (!vis(x0, y0, 80) && !vis(x1, y1, 80)) continue;
+        const a = pr(x0, y0);
+        const b = pr(x1, y1);
+        const s = (a.s + b.s) / 2;
+        g.strokeStyle = pass ? st.fill : st.casing;
+        g.lineWidth = Math.max(1, (r.w + (pass ? 0 : 3)) * s);
+        g.beginPath();
+        g.moveTo(a.x, a.y);
+        g.lineTo(b.x, b.y);
+        g.stroke();
       }
+    }
   }
-BUILDINGS.sort((p, q) => p.y1 - q.y1);
-const POIS: {at: P; kind: 'P' | 'pharma' | 'fuel'}[] = [
-  {at: {x: 450, y: 1060}, kind: 'P'},
-  {at: {x: 700, y: 480}, kind: 'pharma'},
-  {at: {x: 950, y: 190}, kind: 'fuel'},
-  {at: {x: 160, y: 780}, kind: 'P'},
-];
 
-const poly = (pts: {x: number; y: number}[]) => pts.map((p, i) => `${i ? 'L' : 'M'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ') + ' Z';
+  // 3D buildings, far → near. Only walls facing the camera are drawn.
+  const camGy = cam.cy + DIST * Math.sin(cam.tilt);
+  g.lineWidth = 1;
+  for (const b of BLD) {
+    if (!vis(b.cx, b.cy, 30)) continue;
+    const n = b.p.length;
+    const top = b.p.map(([x, y]) => pr(x, y, b.h));
+    for (let i = 0; i < n; i++) {
+      const [x0, y0] = b.p[i];
+      const [x1, y1] = b.p[(i + 1) % n];
+      // outward normal (depends on ring orientation; y axis points south)
+      let nx = y1 - y0;
+      let ny = -(x1 - x0);
+      if (b.ccw) {
+        nx = -nx;
+        ny = -ny;
+      }
+      const mx = (x0 + x1) / 2;
+      const my = (y0 + y1) / 2;
+      if (nx * (cam.cx - mx) + ny * (camGy - my) <= 0) continue;
+      const len = Math.hypot(nx, ny) || 1;
+      const light = 0.5 + 0.5 * ((-nx / len) * 0.6 + (ny / len) * 0.8);
+      const c = Math.round(196 + 30 * light);
+      const p0 = pr(x0, y0);
+      const p1 = pr(x1, y1);
+      g.beginPath();
+      g.moveTo(p0.x, p0.y);
+      g.lineTo(p1.x, p1.y);
+      g.lineTo(top[(i + 1) % n].x, top[(i + 1) % n].y);
+      g.lineTo(top[i].x, top[i].y);
+      g.closePath();
+      g.fillStyle = `rgb(${c - 6},${c - 3},${c + 2})`;
+      g.fill();
+    }
+    g.beginPath();
+    top.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)));
+    g.closePath();
+    g.fillStyle = b.h > 40 ? '#ece6da' : '#e9ebee';
+    g.fill();
+    g.strokeStyle = '#cfd3d9';
+    g.stroke();
+  }
 
-// ---- pieces ----
+  // street names (with halo), along the street
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  for (const l of D.labels) {
+    if (!vis(l.x, l.y, 0)) continue;
+    const a = pr(l.x, l.y);
+    const b = pr(l.x + l.dx * 30, l.y + l.dy * 30);
+    let ang = Math.atan2(b.y - a.y, b.x - a.x);
+    if (ang > Math.PI / 2) ang -= Math.PI;
+    if (ang < -Math.PI / 2) ang += Math.PI;
+    const fs = clamp(15 * a.s, 19, 34);
+    g.save();
+    g.translate(a.x, a.y);
+    g.rotate(ang);
+    g.font = `600 ${fs}px Montserrat`;
+    g.lineWidth = fs * 0.3;
+    g.strokeStyle = '#ffffff';
+    g.strokeText(l.n, 0, 0);
+    g.fillStyle = '#5f6368';
+    g.fillText(l.n, 0, 0);
+    g.restore();
+  }
+
+  // place names
+  for (const pl of D.places) {
+    if (!vis(pl.x, pl.y, 0)) continue;
+    const p = pr(pl.x, pl.y, 4);
+    const water = pl.n === 'La Loire';
+    const fs = clamp((water ? 20 : 15) * p.s, 22, 46);
+    g.font = `${water ? 'italic 700' : '700'} ${fs}px Montserrat`;
+    g.lineWidth = fs * 0.3;
+    g.strokeStyle = water ? 'rgba(255,255,255,0.7)' : '#ffffff';
+    g.strokeText(pl.n, p.x, p.y);
+    g.fillStyle = water ? '#2f78c4' : '#3c4043';
+    g.fillText(pl.n, p.x, p.y);
+  }
+  for (const lm of D.landmarks) {
+    if (!vis(lm.x, lm.y, 0)) continue;
+    const p = pr(lm.x, lm.y, 52);
+    const r = clamp(13 * p.s, 12, 26);
+    g.fillStyle = '#7b61c4';
+    g.beginPath();
+    g.arc(p.x, p.y - r * 1.6, r, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#fff';
+    g.fillRect(p.x - r * 0.12, p.y - r * 2.15, r * 0.24, r * 1.1);
+    g.fillRect(p.x - r * 0.42, p.y - r * 1.85, r * 0.84, r * 0.22);
+    const fs = clamp(15 * p.s, 20, 34);
+    g.font = `700 ${fs}px Montserrat`;
+    g.lineWidth = fs * 0.3;
+    g.strokeStyle = '#ffffff';
+    g.strokeText(lm.name, p.x, p.y + r * 0.2);
+    g.fillStyle = '#5b3fa8';
+    g.fillText(lm.name, p.x, p.y + r * 0.2);
+  }
+};
+
+const MapCanvas: React.FC<{f: number}> = ({f}) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useLayoutEffect(() => {
+    const c = ref.current;
+    if (!c) return;
+    drawMap(c.getContext('2d')!, f);
+  }, [f]);
+  return <canvas ref={ref} width={W} height={H} style={{position: 'absolute', inset: 0, width: W, height: H}} />;
+};
+
+// ---- overlay pieces ----
 const VanTop: React.FC<{x: number; y: number; ang: number; s: number}> = ({x, y, ang, s}) => (
   <g transform={`translate(${x} ${y}) rotate(${(ang * 180) / Math.PI + 90}) scale(${s})`}>
     <circle cx={0} cy={0} r={86} fill="rgba(30,107,255,0.16)" />
@@ -183,24 +332,7 @@ const MapPin: React.FC<{kind: 'home' | 'office'; x: number; y: number; scale: nu
   </g>
 );
 
-const Poi: React.FC<{x: number; y: number; s: number; kind: 'P' | 'pharma' | 'fuel'}> = ({x, y, s, kind}) => {
-  const col = kind === 'P' ? '#1E6BFF' : kind === 'pharma' ? '#18a058' : '#e8710a';
-  const r = clamp(20 * s, 10, 30);
-  return (
-    <g transform={`translate(${x} ${y})`}>
-      <circle r={r} fill={col} stroke="#fff" strokeWidth={3} />
-      {kind === 'P' && (
-        <text y={r * 0.38} textAnchor="middle" fontFamily="Montserrat" fontWeight={800} fontSize={r * 1.1} fill="#fff">
-          P
-        </text>
-      )}
-      {kind === 'pharma' && <path d={`M ${-r * 0.45} 0 H ${r * 0.45} M 0 ${-r * 0.45} V ${r * 0.45}`} stroke="#fff" strokeWidth={r * 0.28} strokeLinecap="round" />}
-      {kind === 'fuel' && <rect x={-r * 0.32} y={-r * 0.45} width={r * 0.64} height={r * 0.9} rx={r * 0.1} fill="#fff" />}
-    </g>
-  );
-};
-
-const Label: React.FC<{text: string; x: number; y: number; p: number}> = ({text, x, y, p}) => {
+const Label: React.FC<{text: string; sub: string; x: number; y: number; p: number}> = ({text, sub, x, y, p}) => {
   if (p <= 0.001) return null;
   return (
     <div
@@ -210,22 +342,21 @@ const Label: React.FC<{text: string; x: number; y: number; p: number}> = ({text,
         top: y,
         transform: `translate(-50%, -100%) scale(${clamp(p, 0, 1.2)})`,
         transformOrigin: '50% 100%',
-        padding: '16px 30px',
+        padding: '16px 30px 18px',
         borderRadius: 26,
         background: '#ffffff',
         color: '#0B1E3F',
         fontFamily: FONT.sans,
-        fontWeight: 800,
-        fontSize: 50,
         whiteSpace: 'nowrap',
         boxShadow: '0 14px 34px rgba(11,30,63,0.35)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
+        lineHeight: 1.1,
       }}
     >
-      <span style={{width: 18, height: 18, borderRadius: 9, background: '#2BD17E', display: 'inline-block'}} />
-      {text}
+      <div style={{display: 'flex', alignItems: 'center', gap: 14, fontWeight: 800, fontSize: 50}}>
+        <span style={{width: 18, height: 18, borderRadius: 9, background: '#2BD17E', display: 'inline-block'}} />
+        {text}
+      </div>
+      <div style={{fontWeight: 600, fontSize: 30, color: '#5f6368', marginTop: 6, paddingLeft: 32}}>{sub}</div>
     </div>
   );
 };
@@ -256,13 +387,39 @@ const NavBanner: React.FC<{f: number}> = ({f}) => {
       }}
     >
       <svg width={84} height={84} viewBox="0 0 84 84">
-        <path d="M 26 70 L 26 40 C 26 30, 32 24, 42 24 L 58 24" fill="none" stroke="#fff" strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M 50 12 L 64 24 L 50 36" fill="none" stroke="#fff" strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M 42 74 L 42 22" fill="none" stroke="#fff" strokeWidth={9} strokeLinecap="round" />
+        <path d="M 26 36 L 42 20 L 58 36" fill="none" stroke="#fff" strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <div style={{lineHeight: 1.1}}>
-        <div style={{fontWeight: 600, fontSize: 30, opacity: 0.85}}>Clean Moteur Mobile</div>
+        <div style={{fontWeight: 600, fontSize: 30, opacity: 0.85}}>Clean Moteur Mobile · Orléans</div>
         <div style={{fontWeight: 800, fontSize: 52}}>En route vers vous</div>
       </div>
+    </div>
+  );
+};
+
+const CityTitle: React.FC<{f: number}> = ({f}) => {
+  const a = prog(f, C.mapDraw + 2, 10, easeOut) * (1 - prog(f, C.vanStart + 2, 8, easeIn));
+  if (a <= 0) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        width: W,
+        top: 640,
+        textAlign: 'center',
+        fontFamily: FONT.sans,
+        fontWeight: 900,
+        fontSize: 120,
+        letterSpacing: -2,
+        color: '#0B1E3F',
+        opacity: a,
+        transform: `scale(${lerp(1.1, 1, a)})`,
+        textShadow: '0 0 18px #fff, 0 0 30px #fff, 0 0 4px #fff',
+      }}
+    >
+      Orléans
     </div>
   );
 };
@@ -309,184 +466,45 @@ const Garage: React.FC<{f: number}> = ({f}) => {
   );
 };
 
-// ---- the map ----
-const MapLayer: React.FC<{f: number}> = ({f}) => {
+const Overlays: React.FC<{f: number}> = ({f}) => {
   const cam = mapCam(f);
-  const pr = (p: P, h = 0) => mapProject(p.x, p.y, f, h);
-  // visible ground window (avoid projecting things behind the camera)
-  const wx0 = cam.cx - 1500;
-  const wx1 = cam.cx + 1500;
-  const wy0 = cam.cy - 1900;
-  const wy1 = cam.cy + 1000;
-  const inWin = (p: P) => p.x > wx0 - 400 && p.x < wx1 + 400 && p.y > wy0 - 400 && p.y < wy1 + 300;
-  const clipY = (a: P, b: P): [P, P] | null => {
-    // clip a segment to y in [wy0, wy1]
-    let A = a;
-    let B = b;
-    const lo = wy0;
-    const hi = wy1;
-    if ((A.y < lo && B.y < lo) || (A.y > hi && B.y > hi)) return null;
-    const cut = (p: P, q: P, y: number): P => ({x: p.x + ((q.x - p.x) * (y - p.y)) / (q.y - p.y || 1e-6), y});
-    if (A.y < lo) A = cut(A, B, lo);
-    if (B.y < lo) B = cut(B, A, lo);
-    if (A.y > hi) A = cut(A, B, hi);
-    if (B.y > hi) B = cut(B, A, hi);
-    return [A, B];
-  };
-  const roadPoly = (r: Road, extra: number) => {
-    const seg = clipY(r.a, r.b);
-    if (!seg) return null;
-    const [a, b] = seg;
-    const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    const nx = (-(b.y - a.y) / len) * (r.w / 2 + extra);
-    const ny = ((b.x - a.x) / len) * (r.w / 2 + extra);
-    return poly([pr({x: a.x + nx, y: a.y + ny}), pr({x: b.x + nx, y: b.y + ny}), pr({x: b.x - nx, y: b.y - ny}), pr({x: a.x - nx, y: a.y - ny})]);
-  };
-
-  const ground = poly([pr({x: wx0, y: wy0}), pr({x: wx1, y: wy0}), pr({x: wx1, y: wy1}), pr({x: wx0, y: wy1})]);
-  const river = [{x: -900, y: 1420}, {x: -300, y: 1250}, {x: 100, y: 1080}, {x: 500, y: 1100}, {x: 900, y: 820}, {x: 1500, y: 760}, {x: 2000, y: 600}];
-
-  // route drawn up to the H2 drop
+  const pr = (p: P, h = 0) => projectWith(cam, p.x, p.y, h);
   const vl = vanLen(f);
-  const leadL = Math.min(TOTAL, vl + 150 * prog(f, C.vanStart - 8, 8));
+  const leadL = Math.min(TOTAL, vl + 110 * prog(f, C.vanStart - 8, 8));
   const drop = routeAt(leadL);
   const routeVisible: P[] = [];
   if (f >= C.vanStart - 8) {
-    for (let i = 0; i < ROUTE_PTS.length && CUM[i] <= leadL; i++) routeVisible.push(ROUTE_PTS[i]);
+    for (let i = 0; i < ROUTE.length && CUM[i] <= leadL; i++) routeVisible.push(ROUTE[i]);
     routeVisible.push({x: drop.x, y: drop.y});
   }
   const routeD = routeVisible.length > 1 ? smoothPath(routeVisible.map((p) => pr(p))) : '';
   const van = routeAt(vl);
   const vanS = pr(van);
-  const vanAhead = pr({x: van.x + Math.cos(van.ang) * 10, y: van.y + Math.sin(van.ang) * 10});
+  const vanAhead = pr({x: van.x + Math.cos(van.ang) * 6, y: van.y + Math.sin(van.ang) * 6});
   const vanAng = Math.atan2(vanAhead.y - vanS.y, vanAhead.x - vanS.x);
   const dropS = pr(drop);
   const homeS = pr(HOME);
   const officeS = pr(OFFICE);
   const officePin = springy(f, C.office - 10, 2.4, 0.5);
-
+  const pinScale = (s: number) => clamp(s * 0.9, 0.6, 1.5);
   return (
     <>
       <svg width={W} height={1920} style={{position: 'absolute', inset: 0}}>
-        <defs>
-          <linearGradient id="mapFog" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#dfe3ea" />
-            <stop offset="1" stopColor="#eef0f3" />
-          </linearGradient>
-        </defs>
-        <rect width={W} height={1920} fill="url(#mapFog)" />
-        <path d={ground} fill="#f1f3f4" />
-        {/* parks + water */}
-        {PARKS.map((p, i) => (inWin({x: p.x0, y: p.y1}) ? <path key={i} d={poly([pr({x: p.x0, y: p.y0}), pr({x: p.x1, y: p.y0}), pr({x: p.x1, y: p.y1}), pr({x: p.x0, y: p.y1})])} fill="#c9e7c4" /> : null))}
-        <path d={smoothPath(river.filter((p) => p.y > wy0 - 200 && p.y < wy1 + 400).map((p) => pr(p)))} fill="none" stroke="#a9d3f5" strokeWidth={70 * pr({x: cam.cx, y: 1000}).s} strokeLinecap="round" />
-        {/* roads: border then fill */}
-        {ROADS.map((r, i) => {
-          const d = roadPoly(r, 5);
-          return d ? <path key={`rb${i}`} d={d} fill={r.major ? '#e9b949' : '#d6d9de'} /> : null;
-        })}
-        {ROADS.map((r, i) => {
-          const d = roadPoly(r, 0);
-          return d ? <path key={`rf${i}`} d={d} fill={r.major ? '#fde293' : '#ffffff'} /> : null;
-        })}
-        {/* trees */}
-        {TREES.filter(inWin).map((t, i) => {
-          const p = pr(t, 6);
-          return <circle key={`t${i}`} cx={p.x} cy={p.y} r={clamp(13 * p.s, 4, 22)} fill="#9fd19a" stroke="#86c181" strokeWidth={1.5} />;
-        })}
-        {/* street names */}
-        {NAMES.filter((n) => inWin(n.at)).map((n, i) => {
-          const a = pr(n.at);
-          const b = pr({x: n.at.x + n.along.x * 60, y: n.at.y + n.along.y * 60});
-          let ang = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-          if (ang > 90) ang -= 180;
-          if (ang < -90) ang += 180;
-          const fs = clamp(24 * a.s, 14, 34);
-          return (
-            <text
-              key={`n${i}`}
-              x={a.x}
-              y={a.y}
-              transform={`rotate(${ang} ${a.x} ${a.y})`}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fontFamily="Montserrat"
-              fontWeight={600}
-              fontSize={fs}
-              fill="#5f6368"
-              stroke="#ffffff"
-              strokeWidth={fs * 0.28}
-              paintOrder="stroke"
-            >
-              {n.name}
-            </text>
-          );
-        })}
-        {/* 3D buildings (far → near) */}
-        {BUILDINGS.filter((b) => inWin({x: b.x0, y: b.y1})).map((b, i) => {
-          const A = pr({x: b.x0, y: b.y1});
-          const B = pr({x: b.x1, y: b.y1});
-          const Cc = pr({x: b.x1, y: b.y0});
-          const Dd = pr({x: b.x0, y: b.y0});
-          const At = pr({x: b.x0, y: b.y1}, b.h);
-          const Bt = pr({x: b.x1, y: b.y1}, b.h);
-          const Ct = pr({x: b.x1, y: b.y0}, b.h);
-          const Dt = pr({x: b.x0, y: b.y0}, b.h);
-          return (
-            <g key={`b${i}`} stroke="#c8ccd3" strokeWidth={1}>
-              {b.x0 > cam.cx && <path d={poly([Dd, A, At, Dt])} fill="#dcdfe4" />}
-              {b.x1 < cam.cx && <path d={poly([B, Cc, Ct, Bt])} fill="#dcdfe4" />}
-              <path d={poly([A, B, Bt, At])} fill="#d2d6dc" />
-              <path d={poly([At, Bt, Ct, Dt])} fill="#e8eaed" />
-            </g>
-          );
-        })}
-        {/* POIs */}
-        {POIS.filter((p) => inWin(p.at)).map((p, i) => {
-          const s = pr(p.at, 10);
-          return <Poi key={`p${i}`} x={s.x} y={s.y} s={s.s} kind={p.kind} />;
-        })}
-        {/* route */}
         {routeD && (
           <>
             <path d={routeD} fill="none" stroke="#0b4fc4" strokeWidth={22} strokeLinecap="round" strokeLinejoin="round" />
             <path d={routeD} fill="none" stroke="#3d84ff" strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
           </>
         )}
-        {/* pins */}
-        {f >= C.pinDrop + 8 && <MapPin kind="home" x={homeS.x} y={homeS.y} scale={homeS.s * 1.25} color="#E3262E" />}
-        {f >= C.office - 10 && <MapPin kind="office" x={officeS.x} y={officeS.y} scale={officeS.s * 1.25 * clamp(officePin, 0, 1.2)} color="#1E6BFF" />}
-        {f >= C.vanStart - 2 && <VanTop x={vanS.x} y={vanS.y} ang={vanAng} s={vanS.s * 1.05} />}
+        {f >= C.pinDrop + 8 && <MapPin kind="home" x={homeS.x} y={homeS.y} scale={pinScale(homeS.s)} color="#E3262E" />}
+        {f >= C.office - 10 && <MapPin kind="office" x={officeS.x} y={officeS.y} scale={pinScale(officeS.s) * clamp(officePin, 0, 1.2)} color="#1E6BFF" />}
+        {f >= C.vanStart - 2 && <VanTop x={vanS.x} y={vanS.y} ang={vanAng} s={clamp(vanS.s * 0.42, 0.45, 0.9)} />}
       </svg>
       {f >= C.vanStart - 8 && f < C.office + 4 && <H2Drop x={dropS.x} y={dropS.y - 30} size={74} leaf={1} label={0.9} opacity={1 - prog(f, C.office, 4)} />}
       <div style={{opacity: 1 - prog(f, C.garage - 4, 6)}}>
-        <Label text="À domicile" x={clamp(homeS.x, 230, 850)} y={homeS.y - 170 * homeS.s} p={springy(f, C.home, 2.4, 0.55)} />
-        <Label text="Sur votre lieu de travail" x={clamp(officeS.x, 360, 540)} y={officeS.y - 175 * officeS.s} p={springy(f, C.office, 2.4, 0.55)} />
+        <Label text="À domicile" sub="Rue Jeanne-d'Arc, Orléans" x={clamp(homeS.x, 330, 750)} y={homeS.y - 150 * pinScale(homeS.s)} p={springy(f, C.home, 2.4, 0.55)} />
+        <Label text="Sur votre lieu de travail" sub="Bd Alexandre-Martin, Orléans" x={clamp(officeS.x, 360, 720)} y={officeS.y - 150 * pinScale(officeS.s)} p={springy(f, C.office, 2.4, 0.55)} />
       </div>
-      {/* top/bottom fades keep the white logo readable and blend with the rest of the film */}
-      <div style={{position: 'absolute', left: 0, top: 0, width: W, height: 330, background: 'linear-gradient(180deg, rgba(5,11,24,0.96) 0%, rgba(5,11,24,0.75) 55%, rgba(5,11,24,0) 100%)'}} />
-      <div style={{position: 'absolute', left: 0, bottom: 0, width: W, height: 260, background: 'linear-gradient(0deg, rgba(5,11,24,0.9), rgba(5,11,24,0))'}} />
-      {/* re-centre button */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 930,
-          top: 1500,
-          width: 96,
-          height: 96,
-          borderRadius: 48,
-          background: '#fff',
-          boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: prog(f, C.vanStart, 8) * (1 - prog(f, C.garage - 4, 6)),
-        }}
-      >
-        <svg width={44} height={44} viewBox="0 0 44 44">
-          <path d="M 22 4 L 36 38 L 22 30 L 8 38 Z" fill="#1E6BFF" />
-        </svg>
-      </div>
-      <NavBanner f={f} />
     </>
   );
 };
@@ -495,7 +513,6 @@ export const S5Travel: React.FC = () => {
   const f = useCurrentFrame();
   if (f < S.travel - 2 || f > S.meca + 8) return null;
   const whip = prog(f, S.meca - 6, 9, easeIn);
-  // map opens with an iris from the centre (where the notification becomes the pin)
   const iris = prog(f, C.mapDraw - 2, 16, easeOut);
   const R = iris * 1300;
   return (
@@ -508,7 +525,16 @@ export const S5Travel: React.FC = () => {
       }}
     >
       <div style={{position: 'absolute', inset: 0, clipPath: `circle(${R.toFixed(1)}px at 540px 980px)`}}>
-        <MapLayer f={f} />
+        <MapCanvas f={f} />
+        <Overlays f={f} />
+        <CityTitle f={f} />
+        {/* fades keep the white logo readable and blend into the rest of the film */}
+        <div style={{position: 'absolute', left: 0, top: 0, width: W, height: 330, background: 'linear-gradient(180deg, rgba(5,11,24,0.96) 0%, rgba(5,11,24,0.75) 55%, rgba(5,11,24,0) 100%)'}} />
+        <div style={{position: 'absolute', left: 0, bottom: 0, width: W, height: 260, background: 'linear-gradient(0deg, rgba(5,11,24,0.9), rgba(5,11,24,0))'}} />
+        <div style={{position: 'absolute', left: 40, top: 1612, fontFamily: FONT.sans, fontWeight: 500, fontSize: 20, color: 'rgba(255,255,255,0.7)'}}>
+          Carte © OpenStreetMap contributors
+        </div>
+        <NavBanner f={f} />
       </div>
       {iris > 0 && iris < 1 && (
         <svg width={W} height={1920} style={{position: 'absolute', inset: 0}}>
@@ -519,3 +545,5 @@ export const S5Travel: React.FC = () => {
     </div>
   );
 };
+
+export const _u = easeOut;

@@ -19,7 +19,7 @@ aucune image générée par IA. La voiture, le téléphone et le disque de frein
 | 2 | 2,5 – 7,5 s | Berline 3D qui se matérialise (scan), capot qui s'ouvre, passage en rayons X / blueprint, 5 annotations rouges tracées au feutre | — |
 | 3 | 7,5 – 10,5 s | La goutte H₂ plonge dans le moteur, vague verte jusqu'à l'échappement, annotations réécrites en vert ✓, la voiture redevient brillante, titre « Décalaminage à l'hydrogène » | la goutte devient une bulle de message |
 | 4 | 10,5 – 15,5 s | Smartphone 3D, conversation (frappe, « en train d'écrire… », devis « Validé ✓ », « Rendez-vous confirmé ») | la notification devient l'épingle sur la carte |
-| 5 | 15,5 – 19,4 s | Carte façon appli de navigation (fond clair, bâtiments 3D, noms de rues, itinéraire bleu, bandeau « En route vers vous ») : l'utilitaire suit la goutte vers « À domicile » puis « Sur votre lieu de travail », puis garage barré | panoramique rapide |
+| 5 | 15,5 – 19,4 s | Vraie carte du centre d'Orléans façon appli de navigation (Loire, Pont George-V, Rue Royale, Place du Martroi, cathédrale, bâtiments 3D) : l'utilitaire suit la goutte vers « À domicile » (Rue Jeanne-d'Arc) puis « Sur votre lieu de travail » (Bd Alexandre-Martin), puis garage barré | panoramique rapide |
 | 6 | 19,4 – 22,5 s | « Et aussi… la petite mécanique » : 4 cartes (Vidange, Freins, Batterie, Diagnostic), l'icône Freins devient un disque 3D | le disque tourne et devient le cercle du QR code |
 | 7 | 22,5 – 26,5 s | QR code Snapchat, « Prenez rendez-vous », téléphone, zone d'intervention | le petit logo grandit |
 | 8 | 26,5 – 30 s | Logo en couleurs sur plaque blanche, « Redonnez une seconde jeunesse à votre moteur ! », téléphone | fin |
@@ -72,6 +72,14 @@ bash audio-src/make_vo.sh [s1 s2 …]               # (optionnel) régénère la
 python3 audio-src/make_audio.py                   # → public/audio/mix_raw.wav
 ffmpeg -y -i public/audio/mix_raw.wav -af "loudnorm=I=-14:TP=-1.5:LRA=11" -ar 48000 public/audio/mix.wav
 ```
+
+## Carte d'Orléans
+
+Données © OpenStreetMap contributors (licence ODbL) : la mention « Carte © OpenStreetMap contributors » est affichée
+dans la scène, elle doit rester. Les adresses sont des noms de rue sans numéro (personne n'est « ciblé »).
+`map-src/build_orleans.py` convertit les tuiles OSM en `src/data/orleans.json` (mètres, rues, bâtiments avec hauteur,
+Loire, parcs) et calcule l'itinéraire sur les vraies rues. Pour changer de ville ou d'adresses : télécharger les tuiles
+(`https://api.openstreetmap.org/api/0.6/map?bbox=…`), modifier `ORIGIN`, `*_STREET` et `*_NEAR` dans le script, relancer.
 
 ## Structure
 
