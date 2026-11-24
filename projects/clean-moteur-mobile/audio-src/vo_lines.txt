@@ -1,0 +1,8 @@
+s1|Fumée noire, perte de puissance, voyant moteur allumé ?
+s2|La calamine encrasse vos soupapes, votre vanne EGR, votre turbo et votre filtre à particules.
+s3|Notre solution : le décalaminage à l'hydrogène. Efficace, et plus écologique.
+s4|Un simple message : on vous envoie le devis, et une fois validé, on fixe le rendez-vous.
+s5|On vient chez vous, ou sur votre lieu de travail. Plus besoin d'aller au garage !
+s6|Et on s'occupe aussi de votre petite mécanique.
+s7|Cinquante euros, intervention en une heure. Prenez rendez-vous dès maintenant !
+s8|Clean Moteur Mobile : redonnez une seconde jeunesse à votre moteur.

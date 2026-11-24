@@ -1,0 +1,5 @@
+node_modules/
+out/*
+!out/clean-moteur-mobile.mp4
+!out/poster.png
+public/audio/mix_raw.wav

@@ -1,0 +1,28 @@
+{
+  "name": "clean-moteur-mobile-ad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Clean Moteur Mobile — 30s vertical motion design ad (Remotion + Three.js)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render CleanMoteurAd out/clean-moteur-mobile.mp4",
+    "still": "remotion still CleanMoteurAd"
+  },
+  "dependencies": {
+    "@fontsource/caveat": "5.2.8",
+    "@fontsource/montserrat": "5.2.8",
+    "@remotion/cli": "4.0.546",
+    "qrcode": "1.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "remotion": "4.0.546",
+    "three": "0.180.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.5",
+    "@types/react": "19.1.12",
+    "@types/three": "0.180.0",
+    "typescript": "5.9.2"
+  }
+}
