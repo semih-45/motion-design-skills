@@ -6,7 +6,7 @@ petite mécanique, intervention à domicile ou sur le lieu de travail).
 - **Format** : 1080 × 1920, 30 fps, 30,0 s, MP4 H.264 + AAC, son à −14 LUFS
 - **Diffusion** : Snapchat (priorité), TikTok, Instagram Reels
 - **Marges** : aucun texte important à moins de 150 px du haut ni à moins de 250 px du bas
-- **Rendu final** : `out/clean-moteur-mobile.mp4`
+- **Rendus finaux** : `out/clean-moteur-mobile.mp4` (voiture bleue) et `out/clean-moteur-mobile-blanc.mp4` (voiture blanche)
 
 Tout est fabriqué en code (Remotion + Three.js) : aucune banque d'images, aucun modèle 3D importé,
 aucune image générée par IA. La voiture, le téléphone et le disque de frein sont modélisés en code.
@@ -33,7 +33,7 @@ npm install
 npm run studio                                    # aperçu interactif dans le navigateur
 npm run render                                    # → out/clean-moteur-mobile.mp4
 npx remotion render CleanMoteurAd out/v2.mp4 \
-  --props='{"phoneDisplay":"07 45 16 23 57","snapchatHandle":"clean.moteur","price":"50€","withAudio":true}'
+  --props='{"phoneDisplay":"07 45 16 23 57","snapchatHandle":"clean.moteur","price":"50€","withAudio":true,"carColor":"blanc"}'
 ```
 
 Les réglages modifiables sans toucher au code (props Remotion) :
@@ -44,6 +44,7 @@ Les réglages modifiables sans toucher au code (props Remotion) :
 | `snapchatHandle` | `clean.moteur` | identifiant Snapchat + contenu du QR code (`https://www.snapchat.com/add/<handle>`) |
 | `price` | `50€` | prix affiché sur le badge |
 | `withAudio` | `true` | avec ou sans la bande son |
+| `carColor` | `bleu` | couleur de la berline 3D : `bleu` ou `blanc` (rendu « studio ») |
 
 Si le rendu échoue avec « Error creating WebGL context », pointer Remotion vers un Chromium local :
 `REMOTION_CHROME=/chemin/vers/chrome-headless-shell npm run render` (le rendu 3D utilise ANGLE/SwiftShader, pas besoin de GPU).
@@ -82,6 +83,7 @@ src/
   components/          logo vectoriel, goutte H₂, traits « feutre », fumée, fond, grain
 audio-src/             voix off, script de musique et bruitages
 tools/stills.mjs       rendu d'images fixes pour vérifier : node tools/stills.mjs 10 150 450
+tools/stills-props.mjs idem avec des props : node tools/stills-props.mjs '{"carColor":"blanc"}' blanc 100
 ```
 
 ## À vérifier avant diffusion

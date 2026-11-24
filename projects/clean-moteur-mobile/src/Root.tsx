@@ -18,6 +18,7 @@ export const RemotionRoot: React.FC = () => (
         snapchatHandle: 'clean.moteur',
         price: '50€',
         withAudio: true,
+        carColor: 'bleu',
       }}
     />
   </>

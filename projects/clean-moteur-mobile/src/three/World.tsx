@@ -4,7 +4,7 @@ import {useCurrentFrame} from 'remotion';
 import * as THREE from 'three';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {H, W, S, C} from '../timeline';
-import {buildCar, glowBlend, PartName} from './carModel';
+import {buildCar, CarColor, glowBlend, PartName} from './carModel';
 import {carMatrix, hoodAngle, makeCarCamera, scanHeight, xraySweep} from './rig';
 import {clamp, easeIn, easeInOut, lin, prog} from '../lib/anim';
 import {buildPhone, PhoneBuild} from './phone';
@@ -77,7 +77,7 @@ const BLUE = new THREE.Color('#5aa0ff');
 const RED = new THREE.Color('#ff3b44');
 const GREEN = new THREE.Color('#2BD17E');
 
-const init = (canvas: HTMLCanvasElement): Ctx => {
+const init = (canvas: HTMLCanvasElement, carColor: CarColor): Ctx => {
   const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true, preserveDrawingBuffer: true});
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
@@ -105,7 +105,7 @@ const init = (canvas: HTMLCanvasElement): Ctx => {
   // --- car stage ---
   const carStage = new THREE.Group();
   scene.add(carStage);
-  const car = buildCar();
+  const car = buildCar(carColor);
   carStage.add(car.root);
 
   const platform = new THREE.Mesh(
@@ -318,7 +318,7 @@ const updateCar = (ctx: Ctx, f: number) => {
   void easeInOut;
 };
 
-export const World3D: React.FC = () => {
+export const World3D: React.FC<{carColor?: CarColor}> = ({carColor = 'bleu'}) => {
   const frame = useCurrentFrame();
   const ref = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<Ctx | null>(null);
@@ -333,7 +333,7 @@ export const World3D: React.FC = () => {
 
   useLayoutEffect(() => {
     if (!ref.current || !fontsReady) return;
-    if (!ctxRef.current) ctxRef.current = init(ref.current);
+    if (!ctxRef.current) ctxRef.current = init(ref.current, carColor);
     const ctx = ctxRef.current;
     if (!active) return;
     ctx.carStage.visible = carOn;

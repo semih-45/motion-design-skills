@@ -345,16 +345,31 @@ const greenSection = (x: number): SecPt[] => {
 // ---------- materials ----------
 export type CarMaterials = ReturnType<typeof makeCarMaterials>;
 
-export const makeCarMaterials = () => {
-  const paint = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#0f4ee6'),
-    metalness: 0.62,
-    roughness: 0.26,
-    clearcoat: 1,
-    clearcoatRoughness: 0.04,
-    vertexColors: true,
-    envMapIntensity: 0.95,
-  });
+export type CarColor = 'bleu' | 'blanc';
+
+export const makeCarMaterials = (carColor: CarColor = 'bleu') => {
+  const paint = new THREE.MeshPhysicalMaterial(
+    carColor === 'blanc'
+      ? {
+          // pearl white, "studio / product render" look
+          color: new THREE.Color('#e4e8ef'),
+          metalness: 0.05,
+          roughness: 0.3,
+          clearcoat: 1,
+          clearcoatRoughness: 0.05,
+          vertexColors: true,
+          envMapIntensity: 0.85,
+        }
+      : {
+          color: new THREE.Color('#0f4ee6'),
+          metalness: 0.62,
+          roughness: 0.26,
+          clearcoat: 1,
+          clearcoatRoughness: 0.04,
+          vertexColors: true,
+          envMapIntensity: 0.95,
+        },
+  );
   const paintSolid = paint.clone();
   paintSolid.vertexColors = false;
   const glass = new THREE.MeshPhysicalMaterial({
@@ -528,8 +543,8 @@ const roundedBox = (w: number, h: number, d: number, r: number) => {
   return g;
 };
 
-export const buildCar = (): CarBuild => {
-  const mats = makeCarMaterials();
+export const buildCar = (carColor: CarColor = 'bleu'): CarBuild => {
+  const mats = makeCarMaterials(carColor);
   const root = new THREE.Group();
   const real = new THREE.Group();
   const ghost = new THREE.Group();

@@ -21,6 +21,7 @@ export const adSchema = z.object({
   snapchatHandle: z.string(),
   price: z.string(),
   withAudio: z.boolean(),
+  carColor: z.enum(['bleu', 'blanc']),
 });
 
 export type AdProps = z.infer<typeof adSchema>;
@@ -47,7 +48,7 @@ export const Ad: React.FC<AdProps> = (props) => {
       {ready && (
         <AbsoluteFill style={{transform: `translate(${sh.x}px, ${sh.y}px) rotate(${sh.r}deg) scale(1.02)`}}>
           <Background />
-          <World3D />
+          <World3D carColor={props.carColor} />
           <S1Hook />
           <S2S3Car />
           <S4Chat />
