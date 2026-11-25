@@ -20,7 +20,7 @@ aucune image générée par IA. La voiture, le téléphone et le disque de frein
 | 3 | 7,5 – 10,5 s | La goutte H₂ plonge dans le moteur, vague verte jusqu'à l'échappement, annotations réécrites en vert ✓, la voiture redevient brillante, titre « Décalaminage à l'hydrogène » | la goutte devient une bulle de message |
 | 4 | 10,5 – 15,5 s | Smartphone 3D, conversation (frappe, « en train d'écrire… », devis « Validé ✓ », « Rendez-vous confirmé ») | la notification devient l'épingle sur la carte |
 | 5 | 15,5 – 19,4 s | Vraie carte du centre d'Orléans façon appli de navigation (Loire, Pont George-V, Rue Royale, Place du Martroi, cathédrale, bâtiments 3D) : l'utilitaire suit la goutte vers « À domicile » (Rue Jeanne-d'Arc) puis « Sur votre lieu de travail » (Bd Alexandre-Martin), puis garage barré | panoramique rapide |
-| 6 | 19,4 – 22,5 s | « Et aussi… la petite mécanique » : 4 cartes (Vidange, Freins, Batterie, Diagnostic), l'icône Freins devient un disque 3D | le disque tourne et devient le cercle du QR code |
+| 6 | 19,4 – 22,5 s | « Et aussi… la petite mécanique » : 4 cartes (Vidange, Freins, Batterie, Diagnostic), l'icône Freins devient un disque 3D, sticker « Prix défiant toute concurrence » (texte seul, sans voix) | le disque tourne et devient le cercle du QR code |
 | 7 | 22,5 – 26,5 s | QR code Snapchat, « Prenez rendez-vous », téléphone, zone d'intervention | le petit logo grandit |
 | 8 | 26,5 – 30 s | Logo en couleurs sur plaque blanche, « Redonnez une seconde jeunesse à votre moteur ! », téléphone | fin |
 

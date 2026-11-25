@@ -825,12 +825,42 @@ export const buildCar = (carColor: CarColor = 'bleu'): CarBuild => {
     cap.position.z = spokeZ + face * 0.005;
     wg.add(cap);
     real.add(wg);
-    // ghost wheel
+    // ghost wheel: glow + blueprint lines (tyre, rim, brake disc, spokes) so it reads from any angle
     const gw = new THREE.Mesh(tireGeo, makeGhostShared);
     gw.position.copy(wg.position);
     ghost.add(gw);
+    const pts: number[] = [];
+    const circle = (r: number, z: number, n = 56) => {
+      for (let k = 0; k < n; k++) {
+        const a0 = (k / n) * Math.PI * 2;
+        const a1 = ((k + 1) / n) * Math.PI * 2;
+        pts.push(Math.cos(a0) * r, Math.sin(a0) * r, z, Math.cos(a1) * r, Math.sin(a1) * r, z);
+      }
+    };
+    const zo = sgn * (CAR.tireW / 2);
+    const zi = -sgn * (CAR.tireW / 2);
+    circle(CAR.wheelR, zo);
+    circle(CAR.wheelR, zi);
+    circle(CAR.wheelR * 0.82, zo);
+    circle(CAR.wheelR * 0.63, zo);
+    circle(0.17, sgn * 0.01, 40);
+    circle(0.06, zo, 24);
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2;
+      pts.push(Math.cos(a) * 0.06, Math.sin(a) * 0.06, zo, Math.cos(a + 0.18) * CAR.wheelR * 0.62, Math.sin(a + 0.18) * CAR.wheelR * 0.62, zo);
+    }
+    for (let k = 0; k < 16; k++) {
+      // tread lines across the tyre width
+      const a = (k / 16) * Math.PI * 2;
+      pts.push(Math.cos(a) * CAR.wheelR, Math.sin(a) * CAR.wheelR, zo, Math.cos(a) * CAR.wheelR, Math.sin(a) * CAR.wheelR, zi);
+    }
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const lines = new THREE.LineSegments(lg, wireMat);
+    lines.position.copy(wg.position);
+    ghost.add(lines);
   };
-  const makeGhostShared = makeGhost('#3f8cff', 0.02, 2.0);
+  const makeGhostShared = makeGhost('#5aa0ff', 0.1, 1.5);
   for (const x of [CAR.axleF, CAR.axleR]) for (const s of [1, -1]) makeWheel(x, s);
 
   // --- interior (seats, wheel) ---

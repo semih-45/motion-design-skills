@@ -15,6 +15,7 @@ import {S7Cta} from './scenes/S7Cta';
 import {S8End} from './scenes/S8End';
 import {TopLogo} from './scenes/TopLogo';
 import {DropGuide} from './scenes/DropGuide';
+import {PriceClaim} from './scenes/PriceClaim';
 
 export const adSchema = z.object({
   phoneDisplay: z.string(),
@@ -34,6 +35,7 @@ const IMPACTS = [
   {f: C.pinDrop + 8, amp: 10},
   {f: C.garageStrike, amp: 18},
   {f: C.disc + 2, amp: 8},
+  {f: C.priceClaim, amp: 12},
   {f: C.logoBig + 14, amp: 8},
 ];
 
@@ -53,6 +55,7 @@ export const Ad: React.FC<AdProps> = (props) => {
           <S5Travel />
           <S6Meca />
           <S7Cta {...props} />
+          <PriceClaim />
           <S8End {...props} />
           <DropGuide />
           <TopLogo />

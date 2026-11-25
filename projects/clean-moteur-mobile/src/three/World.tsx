@@ -188,6 +188,17 @@ const init = (canvas: HTMLCanvasElement, carColor: CarColor): Ctx => {
   );
   car.root.add(wave);
 
+  // Draw order: floor/platform/shadow first, then the x-ray (additive) layer, then the H2 particles.
+  // Without this, the semi-transparent contact shadow could be sorted after (and darken) the x-ray wheels.
+  floor.renderOrder = -3;
+  platform.renderOrder = -2;
+  platformGlow.renderOrder = -2;
+  shadow.renderOrder = -1;
+  car.ghost.traverse((o) => {
+    o.renderOrder = 10;
+  });
+  wave.renderOrder = 11;
+
   const phone = buildPhone();
   scene.add(phone.root);
   const disc = buildDisc();

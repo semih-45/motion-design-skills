@@ -416,6 +416,7 @@ for k in range(4):
     place(sfx, pop(600 + k * 140, 0.12), E(f'card{k + 1}'), 0.32, (-0.3, 0.3)[k % 2])
 place(sfx, S(kick(0.3, 200, 80) * 0.5, shing(0.6) * 0.6), E('disc'), 0.4)
 place(sfx, spinup(sec(EV['qr']) - E('disc')), E('disc') + 0.05, 0.22)
+place(sfx, S(kick(0.3, 140, 55) * 0.7, clap(0.2) * 0.6), E('priceClaim'), 0.45)  # on-screen claim, no voice
 for k in range(10):
     place(sfx, bell(midi(96 + (k * 5) % 12), 0.25, 0.2), E('qr') + k * 0.035, 0.07, (k % 3 - 1) * 0.4)
 place(sfx, whoosh(0.35, 800, 5000), E('ctaCall') - 0.1, 0.25)
